@@ -3,7 +3,7 @@
 import { useCallback, useState, useTransition } from "react";
 import { Modal } from "@/components/modal";
 import { EmptyState } from "@/components/page-header";
-import type { TaskStatus, TaskWithRelations } from "@/lib/types";
+import type { BoardColumn, TaskStatus, TaskWithRelations } from "@/lib/types";
 import { createTask, deleteTask, updateTask } from "./actions";
 import { TaskBoard } from "./task-board";
 import { TaskCalendar } from "./task-calendar";
@@ -13,9 +13,11 @@ type View = "board" | "calendar";
 
 export function TaskWorkspace({
   tasks,
+  columns,
   options,
 }: {
   tasks: TaskWithRelations[];
+  columns: BoardColumn[];
   options: TaskFormOptions;
 }) {
   const [view, setView] = useState<View>("board");
@@ -39,21 +41,20 @@ export function TaskWorkspace({
         </ViewTab>
       </div>
 
-      {tasks.length === 0 ? (
+      {/* Papan tetap ditampilkan meski belum ada tugas — kolom kosong
+          dengan input tambah-cepat di dalamnya jauh lebih mengundang
+          daripada layar kosong dengan satu tombol. */}
+      {view === "board" ? (
+        <TaskBoard tasks={tasks} columns={columns} onOpenTask={setEditing} />
+      ) : tasks.length === 0 ? (
         <EmptyState
           title="Belum ada tugas"
-          description="Tambahkan tugas pertama untuk mulai melacak apa yang sedang dan akan dikerjakan tim."
+          description="Tambahkan tugas dari tampilan Papan — tugas yang punya tenggat akan otomatis muncul di kalender."
           action={
-            <button className="btn btn-accent" onClick={() => setCreating("todo")}>
-              + Tugas Baru
+            <button className="btn btn-accent" onClick={() => setView("board")}>
+              Buka Papan
             </button>
           }
-        />
-      ) : view === "board" ? (
-        <TaskBoard
-          tasks={tasks}
-          onOpenTask={setEditing}
-          onAddTask={setCreating}
         />
       ) : (
         <TaskCalendar tasks={tasks} onOpenTask={setEditing} />

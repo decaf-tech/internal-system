@@ -5,10 +5,12 @@ import { SubmitButton } from "@/components/modal";
 import {
   TASK_PRIORITY_LABEL,
   TASK_STATUS_LABEL,
+  type CardColor,
   type Profile,
   type Project,
   type Task,
 } from "@/lib/types";
+import { ColorPicker } from "./quick-add";
 import type { FormState } from "./actions";
 
 export type TaskFormOptions = {
@@ -37,6 +39,7 @@ export function TaskForm({
   // Pilihan project mengikuti klien yang sedang dipilih — tanpa ini, user
   // bisa menautkan tugas ke project milik klien lain.
   const [clientId, setClientId] = useState(initial?.client_id ?? "");
+  const [color, setColor] = useState<CardColor>(initial?.color ?? "blue");
   const projectChoices = clientId
     ? options.projects.filter((project) => project.client_id === clientId)
     : [];
@@ -142,6 +145,31 @@ export function TaskForm({
             className="field"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="start_date">
+          Mulai (opsional)
+        </label>
+        <input
+          id="start_date"
+          name="start_date"
+          type="date"
+          defaultValue={initial?.start_date ?? ""}
+          className="field"
+        />
+        <p className="mt-1 text-xs text-ink-subtle">
+          Diisi kalau tugas berlangsung beberapa hari — di kalender akan
+          tergambar sebagai batang dari tanggal mulai sampai tenggat.
+        </p>
+      </div>
+
+      <div>
+        <span className="label">Warna Kartu</span>
+        {/* Nilai warna dikirim lewat input tersembunyi karena ColorPicker
+            adalah tombol-tombol, bukan field form biasa. */}
+        <input type="hidden" name="color" value={color} />
+        <ColorPicker value={color} onChange={setColor} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

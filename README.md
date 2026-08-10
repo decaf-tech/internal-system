@@ -29,6 +29,10 @@ tidak perlu disentuh.
 1. Buat project baru di [supabase.com](https://supabase.com) (free tier).
 2. Buka **SQL Editor → New query**, paste seluruh isi
    [`supabase/schema.sql`](supabase/schema.sql), lalu **Run**.
+   Lanjutkan dengan
+   [`supabase/migrations/002_board_and_calendar.sql`](supabase/migrations/002_board_and_calendar.sql)
+   — migration ini menambah warna kartu, tanggal mulai, batas WIP, dan
+   folder dokumen. Aman dijalankan berulang.
 3. Buka **Project Settings → API**, salin:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon` / `publishable` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -38,13 +42,13 @@ tidak perlu disentuh.
 Isi **User Metadata** dengan `{"full_name": "Nama Lengkap"}` — trigger di
 database akan otomatis membuat baris `profiles`.
 
-Terakhir, set peran tiap orang lewat SQL Editor:
+Kalau metadata itu terlewat, namanya akan terbaca seperti potongan email.
+Tidak masalah: tiap orang bisa memperbaiki nama dan perannya sendiri lewat
+halaman **Profil** di dalam sistem (klik namanya di pojok kiri bawah).
 
-```sql
-update profiles set role = 'founder' where full_name = 'Abi';
-update profiles set role = 'coo'     where full_name = 'Ojan';
-update profiles set role = 'admin'   where full_name = 'Lija';
-```
+> **Hak akses sengaja disamaratakan.** Ketiganya bisa melihat dan mengubah
+> semua data, serta saling menugaskan. Peran (`founder`/`coo`/`admin`) hanya
+> label untuk memperjelas siapa mengerjakan apa — bukan pembatas akses.
 
 ### 2. Google Drive
 

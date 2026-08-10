@@ -71,21 +71,46 @@ export type Project = {
   updated_at: string;
 };
 
+export type CardColor =
+  | "blue"
+  | "purple"
+  | "green"
+  | "yellow"
+  | "orange"
+  | "pink"
+  | "grey";
+
 export type Task = {
   id: string;
   title: string;
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
+  color: CardColor;
   assignee_id: string | null;
   client_id: string | null;
   project_id: string | null;
+  start_date: string | null;
   due_date: string | null;
   position: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+};
+
+export type BoardColumn = {
+  status: TaskStatus;
+  wip_limit: number | null;
+};
+
+export type Folder = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  drive_folder_id: string;
+  created_by: string | null;
+  created_at: string;
 };
 
 export type Expense = {
@@ -117,6 +142,7 @@ export type Document = {
   project_id: string | null;
   task_id: string | null;
   expense_id: string | null;
+  folder_id: string | null;
   uploaded_by: string | null;
   created_at: string;
 };
@@ -154,6 +180,18 @@ export const TASK_STATUS_ORDER: TaskStatus[] = [
   "review",
   "done",
 ];
+
+// Warna header tiap kolom papan — tint tipis supaya kolom terbaca sebagai
+// wilayah terpisah tanpa menenggelamkan warna kartu di dalamnya.
+export const TASK_STATUS_TINT: Record<
+  TaskStatus,
+  { header: string; body: string }
+> = {
+  todo: { header: "#dde5e9", body: "#f4f7f8" },
+  in_progress: { header: "#f6dfe0", body: "#fdf6f6" },
+  review: { header: "#fbf0d5", body: "#fdfaf2" },
+  done: { header: "#dfe9dc", body: "#f6faf4" },
+};
 
 export const TASK_PRIORITY_LABEL: Record<TaskPriority, string> = {
   low: "Rendah",
@@ -207,3 +245,63 @@ export const USER_ROLE_LABEL: Record<UserRole, string> = {
   coo: "COO / Sales",
   admin: "Admin / Keuangan",
 };
+
+// Palet sticky note. Sengaja pastel & rendah saturasi supaya banyak kartu
+// berdampingan tetap enak dilihat, dan teks gelap di atasnya tetap terbaca.
+export const CARD_COLORS: Record<
+  CardColor,
+  { label: string; bg: string; border: string; bar: string }
+> = {
+  blue: {
+    label: "Biru",
+    bg: "#dbeafe",
+    border: "#a8c7f0",
+    bar: "#7ba7e0",
+  },
+  purple: {
+    label: "Ungu",
+    bg: "#e2dcf7",
+    border: "#bfb3e8",
+    bar: "#9b8ad6",
+  },
+  green: {
+    label: "Hijau",
+    bg: "#d8ecd0",
+    border: "#aed4a0",
+    bar: "#8cc47a",
+  },
+  yellow: {
+    label: "Kuning",
+    bg: "#fdf0c8",
+    border: "#ecd68f",
+    bar: "#e0c163",
+  },
+  orange: {
+    label: "Oranye",
+    bg: "#fbdfc4",
+    border: "#efc196",
+    bar: "#e5a86e",
+  },
+  pink: {
+    label: "Merah Muda",
+    bg: "#f8d7dd",
+    border: "#eab0bb",
+    bar: "#dd8b9c",
+  },
+  grey: {
+    label: "Abu-abu",
+    bg: "#e4e4e7",
+    border: "#c6c6cb",
+    bar: "#a9a9b0",
+  },
+};
+
+export const CARD_COLOR_ORDER: CardColor[] = [
+  "blue",
+  "purple",
+  "green",
+  "yellow",
+  "orange",
+  "pink",
+  "grey",
+];

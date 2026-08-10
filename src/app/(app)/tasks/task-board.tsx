@@ -20,22 +20,27 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
+  CARD_COLORS,
   TASK_STATUS_LABEL,
   TASK_STATUS_ORDER,
+  TASK_STATUS_TINT,
+  type BoardColumn,
   type TaskStatus,
   type TaskWithRelations,
 } from "@/lib/types";
 import { moveTask } from "./actions";
+import { QuickAdd } from "./quick-add";
 import { SortableTaskCard, TaskCardBody } from "./task-card";
+import { WipLimitControl } from "./wip-limit";
 
 export function TaskBoard({
   tasks,
+  columns: columnConfig,
   onOpenTask,
-  onAddTask,
 }: {
   tasks: TaskWithRelations[];
+  columns: BoardColumn[];
   onOpenTask: (task: TaskWithRelations) => void;
-  onAddTask: (status: TaskStatus) => void;
 }) {
   // Salinan lokal supaya kartu langsung berpindah saat dilepas, tanpa
   // menunggu server. Server action yang menyusul akan menyamakan data.
@@ -58,15 +63,21 @@ export function TaskBoard({
     }),
   );
 
-  const columns = useMemo(() => {
-    const grouped = new Map<TaskStatus, TaskWithRelations[]>(
+  const grouped = useMemo(() => {
+    const map = new Map<TaskStatus, TaskWithRelations[]>(
       TASK_STATUS_ORDER.map((status) => [status, []]),
     );
-    for (const task of items) grouped.get(task.status)?.push(task);
-    for (const list of grouped.values())
+    for (const task of items) map.get(task.status)?.push(task);
+    for (const list of map.values())
       list.sort((a, b) => a.position - b.position);
-    return grouped;
+    return map;
   }, [items]);
+
+  const limits = useMemo(() => {
+    const map = new Map<TaskStatus, number | null>();
+    for (const column of columnConfig) map.set(column.status, column.wip_limit);
+    return map;
+  }, [columnConfig]);
 
   const activeTask = activeId
     ? (items.find((task) => task.id === activeId) ?? null)
@@ -107,7 +118,7 @@ export function TaskBoard({
     const targetStatus = columnOf(String(over.id));
     if (!targetStatus) return;
 
-    const column = (columns.get(targetStatus) ?? []).filter(
+    const column = (grouped.get(targetStatus) ?? []).filter(
       (task) => task.id !== taskId,
     );
 
@@ -149,21 +160,27 @@ export function TaskBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-2 xl:grid-cols-4">
         {TASK_STATUS_ORDER.map((status) => (
           <Column
             key={status}
             status={status}
-            tasks={columns.get(status) ?? []}
+            tasks={grouped.get(status) ?? []}
+            wipLimit={limits.get(status) ?? null}
             onOpenTask={onOpenTask}
-            onAddTask={onAddTask}
           />
         ))}
       </div>
 
       <DragOverlay>
         {activeTask && (
-          <div className="card cursor-grabbing p-3 shadow-lg">
+          <div
+            style={{
+              backgroundColor: CARD_COLORS[activeTask.color]?.bg,
+              borderColor: CARD_COLORS[activeTask.color]?.border,
+            }}
+            className="rotate-2 cursor-grabbing rounded-sm border p-2.5 shadow-lg"
+          >
             <TaskCardBody task={activeTask} />
           </div>
         )}
@@ -175,50 +192,71 @@ export function TaskBoard({
 function Column({
   status,
   tasks,
+  wipLimit,
   onOpenTask,
-  onAddTask,
 }: {
   status: TaskStatus;
   tasks: TaskWithRelations[];
+  wipLimit: number | null;
   onOpenTask: (task: TaskWithRelations) => void;
-  onAddTask: (status: TaskStatus) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const tint = TASK_STATUS_TINT[status];
+  const overLimit = wipLimit !== null && tasks.length > wipLimit;
 
   return (
-    <section
-      ref={setNodeRef}
-      className={`flex flex-col rounded-lg border p-3 transition-colors ${
-        isOver ? "border-accent bg-accent-soft/40" : "border-line bg-surface-muted"
-      }`}
-    >
-      <header className="mb-3 flex items-center justify-between gap-2">
-        <p className="eyebrow">{TASK_STATUS_LABEL[status]}</p>
-        <span className="font-mono text-xs text-ink-subtle">{tasks.length}</span>
+    <section className="flex flex-col">
+      <header
+        className="border-b border-line px-3 py-2.5 text-center"
+        style={{ backgroundColor: tint.header }}
+      >
+        <p className="text-sm font-medium text-ink">
+          {TASK_STATUS_LABEL[status]}
+        </p>
       </header>
 
-      <SortableContext
-        items={tasks.map((task) => task.id)}
-        strategy={verticalListSortingStrategy}
+      <div
+        ref={setNodeRef}
+        className="flex flex-1 flex-col p-2.5 transition-colors"
+        style={{
+          backgroundColor: isOver ? tint.header : tint.body,
+        }}
       >
-        <ul className="flex min-h-16 flex-col gap-2">
-          {tasks.map((task) => (
-            <SortableTaskCard
-              key={task.id}
-              task={task}
-              onOpen={() => onOpenTask(task)}
-            />
-          ))}
-        </ul>
-      </SortableContext>
+        {/* Kartu dan input mengisi ruang yang tersisa, supaya penanda
+            LIMIT selalu menempel di dasar kolom — sejajar antar kolom
+            meski jumlah kartunya berbeda jauh. */}
+        <div className="flex-1">
+          <SortableContext
+            items={tasks.map((task) => task.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="flex min-h-20 flex-col gap-2">
+              {tasks.map((task) => (
+                <SortableTaskCard
+                  key={task.id}
+                  task={task}
+                  onOpen={() => onOpenTask(task)}
+                />
+              ))}
+            </ul>
+          </SortableContext>
 
-      <button
-        type="button"
-        onClick={() => onAddTask(status)}
-        className="mt-2 rounded-md px-2 py-1.5 text-left text-xs text-ink-subtle hover:bg-surface hover:text-ink"
-      >
-        + Tambah tugas
-      </button>
+          <QuickAdd status={status} />
+        </div>
+
+        <div className="mt-3 border-t border-line/70 pt-2.5 text-center">
+          <WipLimitControl
+            status={status}
+            limit={wipLimit}
+            current={tasks.length}
+          />
+          {overLimit && (
+            <p className="mt-1 font-mono text-[10px] text-danger">
+              Kelebihan {tasks.length - wipLimit} tugas
+            </p>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

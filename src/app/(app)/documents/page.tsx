@@ -1,95 +1,71 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { EmptyState, PageHeader } from "@/components/page-header";
-import { formatDate, formatFileSize } from "@/lib/format";
-import type { Document } from "@/lib/types";
+import { PageHeader } from "@/components/page-header";
+import type { Folder } from "@/lib/types";
+import { FileBrowser, type BrowserDocument } from "./file-browser";
 
-type DocumentRow = Document & {
-  client: { id: string; name: string } | null;
-  uploader: { full_name: string } | null;
-};
+export default async function DocumentsPage({
+  searchParams,
+}: PageProps<"/documents">) {
+  const params = await searchParams;
+  const raw = params.folder;
+  const folderId = typeof raw === "string" && raw.length > 0 ? raw : null;
 
-export default async function DocumentsPage() {
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("documents")
-    .select(
-      `*,
-       client:clients(id, name),
-       uploader:profiles!documents_uploaded_by_fkey(full_name)`,
-    )
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [currentResult, foldersResult, documentsResult] = await Promise.all([
+    folderId
+      ? supabase.from("folders").select("*").eq("id", folderId).single()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("folders")
+      .select("*")
+      // `is` untuk null, `eq` untuk id — PostgREST membedakan keduanya.
+      [folderId ? "eq" : "is"]("parent_id", folderId)
+      .order("name"),
+    supabase
+      .from("documents")
+      .select(
+        `*,
+         uploader:profiles!documents_uploaded_by_fkey(full_name),
+         client:clients(id, name)`,
+      )
+      [folderId ? "eq" : "is"]("folder_id", folderId)
+      .order("created_at", { ascending: false }),
+  ]);
 
-  const documents = (data ?? []) as unknown as DocumentRow[];
+  const currentFolder = (currentResult.data ?? null) as Folder | null;
+
+  // Rangkai jejak folder dari root sampai folder yang sedang dibuka,
+  // supaya breadcrumb bisa menampilkan seluruh jalurnya.
+  const breadcrumb: Folder[] = [];
+  if (currentFolder) {
+    let cursor: Folder | null = currentFolder;
+    for (let depth = 0; cursor && depth < 20; depth += 1) {
+      breadcrumb.unshift(cursor);
+      if (!cursor.parent_id) break;
+      const { data } = await supabase
+        .from("folders")
+        .select("*")
+        .eq("id", cursor.parent_id)
+        .single();
+      cursor = (data ?? null) as Folder | null;
+    }
+  }
 
   return (
     <>
       <PageHeader
         eyebrow="04 · Arsip"
-        title="Semua Dokumen"
-        description="File tersimpan di Google Drive tim; halaman ini indeks pencariannya."
+        title="Dokumen"
+        description="Simpan apa saja, susun sesukamu. Semua tersimpan di Google Drive tim."
       />
 
-      {documents.length === 0 ? (
-        <EmptyState
-          title="Belum ada dokumen"
-          description="Unggah dokumen dari halaman klien atau catatan pengeluaran — file akan otomatis dirapikan ke folder Drive yang sesuai."
-        />
-      ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full min-w-2xl text-left text-sm">
-            <thead>
-              <tr className="border-b border-line bg-surface-muted">
-                <Th>Nama File</Th>
-                <Th>Klien</Th>
-                <Th>Ukuran</Th>
-                <Th>Diunggah</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.map((doc) => (
-                <tr key={doc.id} className="border-b border-line last:border-b-0">
-                  <td className="px-3 py-2.5">
-                    <a
-                      href={`/api/documents/${doc.id}/download`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:text-accent hover:underline"
-                    >
-                      {doc.name}
-                    </a>
-                  </td>
-                  <td className="px-3 py-2.5 text-ink-muted">
-                    {doc.client ? (
-                      <Link
-                        href={`/clients/${doc.client.id}`}
-                        className="hover:text-accent hover:underline"
-                      >
-                        {doc.client.name}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 font-mono text-xs text-ink-subtle">
-                    {formatFileSize(doc.size_bytes)}
-                  </td>
-                  <td className="px-3 py-2.5 text-ink-muted">
-                    {formatDate(doc.created_at)}
-                    {doc.uploader && ` · ${doc.uploader.full_name}`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <FileBrowser
+        currentFolder={currentFolder}
+        breadcrumb={breadcrumb}
+        folders={(foldersResult.data ?? []) as Folder[]}
+        documents={(documentsResult.data ?? []) as unknown as BrowserDocument[]}
+      />
     </>
   );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="eyebrow px-3 py-2.5 font-normal">{children}</th>;
 }

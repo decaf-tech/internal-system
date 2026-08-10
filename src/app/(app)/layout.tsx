@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
@@ -30,19 +31,20 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
 
         <div className="mt-auto hidden border-t border-line p-3 lg:block">
-          <div className="flex items-center gap-2.5 px-1 py-1.5">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2.5 rounded-md px-1 py-1.5 hover:bg-surface-muted"
+          >
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-soft font-mono text-xs text-forest">
               {initials(name)}
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{name}</p>
-              {role && (
-                <p className="truncate text-xs text-ink-subtle">
-                  {USER_ROLE_LABEL[role]}
-                </p>
-              )}
+              <p className="truncate text-xs text-ink-subtle">
+                {role ? USER_ROLE_LABEL[role] : "Atur profil"}
+              </p>
             </div>
-          </div>
+          </Link>
           <form action={logout}>
             <button
               type="submit"
