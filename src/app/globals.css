@@ -1,26 +1,169 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* =====================================================================
+   Design token — diturunkan dari Proposal Transformasi Digital v2.1
+   supaya sistem internal ini terasa satu keluarga dengan dokumen klien:
+   latar krem, tinta cokelat gelap, aksen terracotta, label monospace.
+   ===================================================================== */
+
+@theme {
+  /* Latar & permukaan */
+  --color-canvas: #faf7f2;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2eee6;
+  --color-surface-sunken: #ebe5da;
+
+  /* Tinta */
+  --color-ink: #1c1815;
+  --color-ink-muted: #6e655c;
+  --color-ink-subtle: #9a9089;
+  --color-ink-inverse: #faf7f2;
+
+  /* Aksen terracotta — dipakai untuk label seksi & elemen aktif */
+  --color-accent: #b0522c;
+  --color-accent-hover: #97441f;
+  --color-accent-soft: #f6e7de;
+
+  /* Hijau tua — di proposal dipakai untuk angka capaian & jalur branding */
+  --color-forest: #235e54;
+  --color-forest-soft: #dceae6;
+
+  /* Garis */
+  --color-line: #e5dfd4;
+  --color-line-strong: #d3cabb;
+
+  /* Status */
+  --color-warn: #a8761c;
+  --color-warn-soft: #f8eed8;
+  --color-danger: #a33a2c;
+  --color-danger-soft: #f7e2df;
+
+  /* Tipografi */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-lora), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Label kecil huruf besar bermonospace — motif khas proposal
+     ("01 · FILOSOFI", "TRACK: BUSINESS OPERATIONAL"). */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-subtle);
+  }
+
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+  }
+
+  /* Field form: satu kelas dipakai input, select, dan textarea supaya
+     tinggi & fokus ring-nya konsisten di seluruh sistem. */
+  .field {
+    width: 100%;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+    outline: none;
+  }
+  .field::placeholder {
+    color: var(--color-ink-subtle);
+  }
+  .field:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+  }
+  .field:disabled {
+    background-color: var(--color-surface-muted);
+    color: var(--color-ink-muted);
+  }
+
+  .label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-muted);
+    margin-bottom: 0.375rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background-color: var(--color-ink);
+    color: var(--color-ink-inverse);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: #000;
+  }
+
+  .btn-accent {
+    background-color: var(--color-accent);
+    color: #fff;
+  }
+  .btn-accent:hover:not(:disabled) {
+    background-color: var(--color-accent-hover);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-surface-muted);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 999px;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
 }
