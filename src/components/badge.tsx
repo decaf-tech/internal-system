@@ -1,6 +1,7 @@
 import type {
   ClientStatus,
   ExpenseStatus,
+  IncomeStatus,
   ProjectStatus,
   TaskPriority,
   TaskStatus,
@@ -8,6 +9,7 @@ import type {
 import {
   CLIENT_STATUS_LABEL,
   EXPENSE_STATUS_LABEL,
+  INCOME_STATUS_LABEL,
   PROJECT_STATUS_LABEL,
   TASK_PRIORITY_LABEL,
   TASK_STATUS_LABEL,
@@ -98,5 +100,19 @@ export function ExpenseStatusBadge({ status }: { status: ExpenseStatus }) {
     <Pill tone={EXPENSE_STATUS_TONE[status]}>
       {EXPENSE_STATUS_LABEL[status]}
     </Pill>
+  );
+}
+
+const INCOME_STATUS_TONE: Record<IncomeStatus, Tone> = {
+  planned: "neutral",
+  invoiced: "warn",
+  // Hijau khusus untuk uang yang benar-benar sudah masuk — hanya baris
+  // berwarna ini yang ikut dihitung sebagai kas masuk di halaman Cashflow.
+  received: "forest",
+};
+
+export function IncomeStatusBadge({ status }: { status: IncomeStatus }) {
+  return (
+    <Pill tone={INCOME_STATUS_TONE[status]}>{INCOME_STATUS_LABEL[status]}</Pill>
   );
 }

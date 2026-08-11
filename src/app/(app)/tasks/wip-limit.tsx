@@ -5,7 +5,7 @@ import type { TaskStatus } from "@/lib/types";
 import { updateWipLimit } from "./actions";
 
 /**
- * Penanda batas WIP di kaki kolom, seperti "LIMIT / Maximum tasks: 5".
+ * Penanda batas WIP di kaki kolom, seperti "LIMIT / Maksimal 5 tugas".
  * Diklik untuk mengubah angkanya; dikosongkan berarti tanpa batas.
  */
 export function WipLimitControl({
@@ -76,14 +76,15 @@ export function WipLimitControl({
           "Tanpa batas"
         ) : (
           <>
-            Maximum tasks:{" "}
+            Maksimal{" "}
             <span
               className={
                 current > limit ? "font-medium text-danger" : "text-ink"
               }
             >
               {limit}
-            </span>
+            </span>{" "}
+            tugas
           </>
         )}
       </span>

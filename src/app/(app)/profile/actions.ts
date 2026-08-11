@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { UserRole } from "@/lib/types";
+import { logActivity } from "@/lib/activity";
+import { MEMBER_COLOR_ORDER, type MemberColor, type UserRole } from "@/lib/types";
 
 export type FormState = { error: string | null; ok?: true };
 
@@ -27,17 +28,33 @@ export async function updateProfile(
     : null;
   if (!role) return { error: "Peran tidak dikenali." };
 
+  // Warna identitas. Nilai yang tidak dikenali diabaikan (dibiarkan null)
+  // daripada menolak seluruh penyimpanan — warna cuma penanda visual, dan
+  // ada cadangan yang dihitung dari id kalau kolomnya kosong.
+  const rawColor = String(formData.get("color") ?? "");
+  const color = MEMBER_COLOR_ORDER.includes(rawColor as MemberColor)
+    ? (rawColor as MemberColor)
+    : null;
+
   // RLS hanya mengizinkan seseorang mengubah barisnya sendiri, tapi
   // filter id di sini tetap ditulis eksplisit agar niatnya jelas terbaca.
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, role })
+    .update({ full_name: fullName, role, color })
     .eq("id", user.id);
 
   if (error) {
     console.error("Gagal memperbarui profil:", error);
     return { error: "Gagal menyimpan profil." };
   }
+
+  await logActivity(supabase, {
+    actorId: user.id,
+    entityType: "profile",
+    entityId: user.id,
+    action: "updated",
+    summary: `memperbarui profil sendiri (${fullName})`,
+  });
 
   revalidatePath("/", "layout");
   return { error: null, ok: true };

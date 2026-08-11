@@ -24,8 +24,12 @@ export default async function ClientDetailPage({
   if (!data) notFound();
   const client = data as Client;
 
-  const [{ data: projects }, { data: tasks }, { data: documents }] =
-    await Promise.all([
+  const [
+    { data: projects },
+    { data: tasks },
+    { data: documents },
+    { data: incomes },
+  ] = await Promise.all([
       supabase
         .from("projects")
         .select("*")
@@ -42,7 +46,23 @@ export default async function ClientDetailPage({
         .select("*")
         .eq("client_id", id)
         .order("created_at", { ascending: false }),
+      // Hanya yang uangnya benar-benar sudah diterima — ini yang dipakai
+      // menghitung sisa tagihan tiap project.
+      supabase
+        .from("incomes")
+        .select("project_id, amount")
+        .eq("client_id", id)
+        .eq("status", "received"),
     ]);
+
+  const allDocuments = (documents ?? []) as Document[];
+
+  const receivedByProject: Record<string, number> = {};
+  for (const row of incomes ?? []) {
+    if (!row.project_id) continue;
+    receivedByProject[row.project_id] =
+      (receivedByProject[row.project_id] ?? 0) + Number(row.amount);
+  }
 
   return (
     <>
@@ -76,6 +96,8 @@ export default async function ClientDetailPage({
           <ProjectSection
             clientId={client.id}
             projects={(projects ?? []) as Project[]}
+            receivedByProject={receivedByProject}
+            documents={allDocuments}
           />
 
           <section className="card p-4">
@@ -107,7 +129,11 @@ export default async function ClientDetailPage({
           </section>
 
           <DocumentPanel
-            documents={(documents ?? []) as Document[]}
+            // Lampiran milik sebuah project punya panelnya sendiri di
+            // kartu project di atas — di sini yang tampil cuma dokumen
+            // klien yang tidak terikat ke project mana pun (kontrak
+            // payung, NDA, profil perusahaan).
+            documents={allDocuments.filter((doc) => doc.project_id === null)}
             link={{ clientId: client.id }}
           />
         </div>

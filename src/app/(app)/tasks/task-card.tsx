@@ -2,8 +2,13 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { formatRelativeDue, initials } from "@/lib/format";
-import { CARD_COLORS, type TaskWithRelations } from "@/lib/types";
+import { formatRelativeDue } from "@/lib/format";
+import { parseKey, todayKey } from "@/lib/date-range";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { CARD_COLORS, type Label, type TaskWithRelations } from "@/lib/types";
+import { MemberAvatarStack } from "@/components/member-avatar";
+import { LabelStrips } from "./pickers";
 
 /**
  * Ikon peringatan untuk kartu yang perlu dilihat duluan: sudah lewat
@@ -13,15 +18,24 @@ function needsAttention(task: TaskWithRelations) {
   if (task.status === "done") return false;
   if (task.priority === "urgent") return true;
   if (!task.due_date) return false;
-  return task.due_date < new Date().toISOString().slice(0, 10);
+  return task.due_date < todayKey();
 }
 
-/** Tampilan kartu murni — dipakai di kolom maupun saat sedang diseret. */
+/**
+ * Tampilan kartu murni — dipakai di kolom maupun saat sedang diseret.
+ *
+ * Susunannya: strip label di atas, judul, lalu satu baris kaki berisi
+ * tanggal, klien, dan avatar. Semua informasi tambahan diringkas jadi
+ * penanda kecil di baris kaki itu supaya kartu tetap setinggi dua-tiga
+ * baris walau tugasnya membawa banyak keterangan.
+ */
 export function TaskCardBody({
   task,
+  labels,
   onOpen,
 }: {
   task: TaskWithRelations;
+  labels: Label[];
   onOpen?: () => void;
 }) {
   // Tugas selesai tidak perlu peringatan "telat" — tenggatnya sudah lewat
@@ -29,8 +43,21 @@ export function TaskCardBody({
   const due = task.status === "done" ? null : formatRelativeDue(task.due_date);
   const alert = needsAttention(task);
 
+  // Rentang beberapa hari ditulis sebagai tanggal, bukan "3 hari lagi" —
+  // yang dibutuhkan saat melihat batang panjang adalah kapan mulainya.
+  const span =
+    task.start_date && task.due_date && task.start_date !== task.due_date
+      ? `${format(parseKey(task.start_date), "d MMM", { locale: localeId })} – ${format(
+          parseKey(task.due_date),
+          "d MMM",
+          { locale: localeId },
+        )}`
+      : null;
+
   return (
     <div className="space-y-1.5">
+      <LabelStrips labels={labels} />
+
       <div className="flex items-start justify-between gap-1.5">
         <button
           type="button"
@@ -60,41 +87,44 @@ export function TaskCardBody({
               </svg>
             </span>
           )}
-          {task.assignee && (
-            <span
-              title={task.assignee.full_name}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-white/70 font-mono text-[9px] text-ink-muted"
-            >
-              {initials(task.assignee.full_name)}
-            </span>
-          )}
+          <MemberAvatarStack members={task.assignees} size="sm" max={3} />
         </div>
       </div>
 
-      {task.client && (
-        <p className="truncate font-mono text-[10px] text-ink-muted/80">
-          {task.client.name}
-        </p>
-      )}
-
-      {due && (
-        <p
-          className={`font-mono text-[10px] ${
-            due.overdue ? "font-medium text-[#b91c1c]" : "text-ink-muted/80"
-          }`}
-        >
-          {due.text}
-        </p>
-      )}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-ink-muted/80">
+        {task.description && (
+          <span title="Ada deskripsi" aria-label="Ada deskripsi">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M3 4.5h10M3 8h10M3 11.5h6"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+        )}
+        {task.client && <span className="truncate">{task.client.name}</span>}
+        {span && <span>{span}</span>}
+        {due && !span && (
+          <span
+            className={due.overdue ? "font-medium text-[#b91c1c]" : undefined}
+          >
+            {due.text}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
 export function SortableTaskCard({
   task,
+  labels,
   onOpen,
 }: {
   task: TaskWithRelations;
+  labels: Label[];
   onOpen: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -113,15 +143,16 @@ export function SortableTaskCard({
         opacity: isDragging ? 0.35 : 1,
         backgroundColor: palette.bg,
         borderColor: palette.border,
-        // Tanpa ini, menyeret kartu di layar sentuh malah menggulirkan
-        // halaman, dan di desktop malah menyorot teks.
-        touchAction: "none",
+        // 'manipulation', bukan 'none': di HP, drag baru aktif setelah
+        // ditahan sebentar (lihat TouchSensor di task-board), jadi jari
+        // yang sekadar menggulir halaman harus tetap bisa menggulir.
+        touchAction: "manipulation",
       }}
       className="cursor-grab rounded-sm border p-2.5 shadow-[0_1px_2px_rgba(28,24,21,0.08)] select-none active:cursor-grabbing"
       {...attributes}
       {...listeners}
     >
-      <TaskCardBody task={task} onOpen={onOpen} />
+      <TaskCardBody task={task} labels={labels} onOpen={onOpen} />
     </li>
   );
 }

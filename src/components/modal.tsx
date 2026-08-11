@@ -35,7 +35,9 @@ export function Modal({
       // keduanya harus melapor balik supaya state induk ikut tertutup.
       onCancel={onClose}
       onClose={onClose}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg border border-line bg-surface p-0 text-ink backdrop:bg-ink/30"
+      // Di HP dialognya hampir selebar layar dan menempel ke bawah supaya
+      // isinya berada dekat jempol; di layar lebar tetap kotak di tengah.
+      className="m-auto mb-0 max-h-[92vh] w-[min(32rem,calc(100vw-1rem))] rounded-t-lg border border-line bg-surface p-0 text-ink backdrop:bg-ink/30 sm:mb-auto sm:w-[min(32rem,calc(100vw-2rem))] sm:rounded-lg"
     >
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
         <h2 className="text-lg">{title}</h2>

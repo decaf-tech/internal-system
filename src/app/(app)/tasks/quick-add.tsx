@@ -1,100 +1,273 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
+import { addDays, format } from "date-fns";
 import {
   CARD_COLORS,
   CARD_COLOR_ORDER,
   type CardColor,
+  type Label,
+  type Member,
   type TaskStatus,
 } from "@/lib/types";
+import { AssigneePicker, LabelPicker } from "./pickers";
 import { quickAddTask } from "./actions";
 
 /**
- * Input tambah-cepat di kaki tiap kolom.
+ * Penulis kartu di kaki tiap kolom.
  *
- * Tujuannya menghilangkan gesekan mencatat: ketik judul, Enter, kartu jadi.
- * Field tetap terbuka setelah submit supaya beberapa tugas bisa dituang
- * berurutan — pola yang penting saat Lija memindahkan catatan rapat.
+ * Bentuknya sengaja dibuat menyerupai kartu yang akan dihasilkan — sudah
+ * berwarna sesuai pilihan sejak masih diketik — supaya menambah tugas
+ * terasa seperti menempel sticky note, bukan mengisi formulir.
+ *
+ * Aturan mainnya: Enter menyimpan, Shift+Enter ganti baris, Esc menutup.
+ * Setelah tersimpan komposer tetap terbuka dan fokus tetap di dalamnya,
+ * jadi beberapa tugas bisa dituang berurutan tanpa menyentuh tetikus —
+ * pola yang penting saat memindahkan catatan rapat.
  */
-export function QuickAdd({ status }: { status: TaskStatus }) {
+export function QuickAdd({
+  status,
+  members,
+  labels,
+}: {
+  status: TaskStatus;
+  members: Member[];
+  labels: Label[];
+}) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [color, setColor] = useState<CardColor>("blue");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [dueDate, setDueDate] = useState("");
+  const [labelIds, setLabelIds] = useState<string[]>([]);
+  const [knownLabels, setKnownLabels] = useState(labels);
+  const [showDetail, setShowDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Judul yang sedang dikirim ke server, ditampilkan sebagai kartu samar
+  // supaya kartu terasa langsung jadi meski jaringan lambat.
+  const [saving, setSaving] = useState<string[]>([]);
 
-  function submit() {
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const palette = CARD_COLORS[color];
+
+  function grow(element: HTMLTextAreaElement) {
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }
+
+  function reset() {
+    setTitle("");
+    setError(null);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.style.height = "auto";
+    }
+  }
+
+  function close() {
+    setOpen(false);
+    setShowDetail(false);
+    setDueDate("");
+    setAssigneeIds([]);
+    setLabelIds([]);
+    reset();
+  }
+
+  async function submit() {
     const value = title.trim();
-    if (!value || pending) return;
+    if (!value) return;
 
-    startTransition(async () => {
-      const result = await quickAddTask(status, value, color);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      setError(null);
-      setTitle("");
-      inputRef.current?.focus();
+    // Bersihkan field lebih dulu supaya tugas berikutnya bisa langsung
+    // diketik sementara yang ini masih dalam perjalanan ke server.
+    reset();
+    setSaving((current) => [...current, value]);
+    inputRef.current?.focus();
+
+    const result = await quickAddTask({
+      status,
+      title: value,
+      color,
+      assigneeIds,
+      dueDate: dueDate || null,
+      labelIds,
     });
+
+    setSaving((current) => {
+      const index = current.indexOf(value);
+      if (index === -1) return current;
+      return [...current.slice(0, index), ...current.slice(index + 1)];
+    });
+
+    if (result.error) {
+      setError(`${result.error} — "${value}" belum tersimpan.`);
+    }
   }
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(true);
-          // Fokus setelah input benar-benar ada di DOM.
-          requestAnimationFrame(() => inputRef.current?.focus());
-        }}
-        className="mt-2 w-full rounded px-2 py-1.5 text-left text-xs text-ink-muted hover:bg-white/70 hover:text-ink"
-      >
-        + Tambah tugas
-      </button>
+      <>
+        <PendingCards titles={saving} />
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(true);
+            // Fokus setelah textarea benar-benar ada di DOM.
+            requestAnimationFrame(() => inputRef.current?.focus());
+          }}
+          className="mt-2 w-full rounded-sm border border-dashed border-line px-2 py-2 text-left text-xs text-ink-muted transition-colors hover:border-ink-subtle hover:bg-white/60 hover:text-ink"
+        >
+          + Tambah tugas
+        </button>
+      </>
     );
   }
 
   return (
-    <div className="mt-2 rounded border border-line bg-white/80 p-2">
-      <input
-        ref={inputRef}
-        value={title}
-        disabled={pending}
-        onChange={(event) => setTitle(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            submit();
-          }
-          if (event.key === "Escape") {
-            setOpen(false);
-            setTitle("");
-            setError(null);
-          }
-        }}
-        placeholder="Judul tugas, lalu Enter…"
-        className="w-full bg-transparent text-[13px] outline-none placeholder:text-ink-subtle"
-      />
+    <>
+      <PendingCards titles={saving} />
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <ColorPicker value={color} onChange={setColor} />
+      <div
+        style={{ backgroundColor: palette.bg, borderColor: palette.border }}
+        className="relative mt-2 rounded-sm border shadow-sm"
+      >
         <button
           type="button"
-          onClick={() => {
-            setOpen(false);
-            setTitle("");
-            setError(null);
-          }}
-          className="text-xs text-ink-subtle hover:text-ink"
+          onClick={close}
+          aria-label="Tutup penulis tugas"
+          className="absolute top-1 right-1 rounded px-1 text-[13px] leading-none text-ink-subtle hover:bg-black/5 hover:text-ink"
         >
-          Tutup
+          ×
         </button>
+
+        <textarea
+          ref={inputRef}
+          rows={2}
+          defaultValue=""
+          onChange={(event) => {
+            setTitle(event.target.value);
+            grow(event.target);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              submit();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              close();
+            }
+          }}
+          placeholder="Tulis tugas…"
+          className="w-full resize-none bg-transparent px-2.5 pt-2.5 pr-6 text-[13px] leading-snug text-ink outline-none placeholder:text-ink-subtle"
+        />
+
+        {showDetail && (
+          <div className="space-y-2 px-2.5 pb-1">
+            <AssigneePicker
+              members={members}
+              value={assigneeIds}
+              onChange={setAssigneeIds}
+              size="sm"
+            />
+
+            <LabelPicker
+              labels={knownLabels}
+              value={labelIds}
+              onChange={setLabelIds}
+              onCreated={(label) =>
+                setKnownLabels((current) => [...current, label])
+              }
+            />
+
+            <div className="flex items-center gap-1">
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                aria-label="Tenggat"
+                className="min-w-0 flex-1 rounded border border-black/10 bg-white/70 px-1.5 py-1 font-mono text-[11px] text-ink outline-none"
+              />
+              <DayChip label="Hari ini" days={0} onPick={setDueDate} />
+              <DayChip label="Besok" days={1} onPick={setDueDate} />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-2 px-2.5 pt-1.5 pb-2">
+          <ColorPicker value={color} onChange={setColor} />
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setShowDetail((current) => !current)}
+              aria-pressed={showDetail}
+              className={`rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-black/5 ${
+                showDetail ||
+                assigneeIds.length > 0 ||
+                dueDate ||
+                labelIds.length > 0
+                  ? "text-ink"
+                  : "text-ink-muted"
+              }`}
+            >
+              Detail
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={title.trim().length === 0}
+              className="rounded bg-ink px-2 py-0.5 text-[11px] text-ink-inverse transition-opacity disabled:opacity-30"
+            >
+              Simpan
+            </button>
+          </div>
+        </div>
       </div>
 
-      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
-    </div>
+      <p className="mt-1 font-mono text-[10px] leading-tight text-ink-subtle">
+        Enter simpan · Shift+Enter baris baru
+      </p>
+
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+    </>
+  );
+}
+
+/** Kartu samar untuk tugas yang sudah diketik tapi belum dikonfirmasi server. */
+function PendingCards({ titles }: { titles: string[] }) {
+  if (titles.length === 0) return null;
+
+  return (
+    <ul className="mt-2 flex flex-col gap-2">
+      {titles.map((title, index) => (
+        <li
+          key={`${title}-${index}`}
+          className="animate-pulse rounded-sm border border-line bg-white/60 px-2.5 py-2 text-[13px] leading-snug text-ink-muted"
+        >
+          {title}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DayChip({
+  label,
+  days,
+  onPick,
+}: {
+  label: string;
+  days: number;
+  onPick: (value: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPick(format(addDays(new Date(), days), "yyyy-MM-dd"))}
+      className="shrink-0 rounded border border-black/10 bg-white/70 px-1.5 py-1 text-[10px] text-ink-muted hover:text-ink"
+    >
+      {label}
+    </button>
   );
 }
 

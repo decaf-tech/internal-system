@@ -3,41 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getStorage } from "@/lib/storage";
+import { folderPathOf } from "@/lib/documents/paths";
 
 export type ActionResult = { error: string | null };
-
-// Batas ukuran file. Vercel membatasi body request serverless di 4.5MB,
-// jadi angka ini jangan dinaikkan tanpa pindah ke upload langsung
-// (resumable upload ke Drive dari browser).
-const MAX_FILE_BYTES = 4 * 1024 * 1024;
-
-/**
- * Rangkai nama folder dari root sampai folder tujuan.
- * Dipakai untuk memberi tahu StorageProvider harus menaruh file di mana.
- */
-async function pathOf(folderId: string | null): Promise<string[]> {
-  if (!folderId) return [];
-
-  const supabase = await createClient();
-  const path: string[] = [];
-  let current: string | null = folderId;
-
-  // Batas 20 tingkat sebagai jaring pengaman: kalau data folder sempat
-  // rusak dan membentuk lingkaran, loop ini tetap berhenti.
-  for (let depth = 0; current && depth < 20; depth += 1) {
-    const { data }: { data: { name: string; parent_id: string | null } | null } =
-      await supabase
-        .from("folders")
-        .select("name, parent_id")
-        .eq("id", current)
-        .single();
-    if (!data) break;
-    path.unshift(data.name);
-    current = data.parent_id;
-  }
-
-  return path;
-}
 
 export async function createFolder(
   parentId: string | null,
@@ -52,7 +20,7 @@ export async function createFolder(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sesi habis. Silakan masuk lagi." };
 
-  const parentPath = await pathOf(parentId);
+  const parentPath = await folderPathOf(parentId);
 
   let driveFolderId: string;
   try {
@@ -83,69 +51,6 @@ export async function createFolder(
   }
 
   revalidatePath("/documents");
-  return { error: null };
-}
-
-export async function uploadToFolder(
-  folderId: string | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "Sesi habis. Silakan masuk lagi." };
-
-  const files = formData.getAll("files").filter((f): f is File => f instanceof File);
-  if (files.length === 0) return { error: "Tidak ada file yang dipilih." };
-
-  const folderPath = await pathOf(folderId);
-  const storage = getStorage();
-  const failed: string[] = [];
-
-  for (const file of files) {
-    if (file.size === 0) continue;
-    if (file.size > MAX_FILE_BYTES) {
-      failed.push(`${file.name} (lebih dari 4MB)`);
-      continue;
-    }
-
-    try {
-      const stored = await storage.upload({
-        name: file.name,
-        mimeType: file.type || "application/octet-stream",
-        content: file.stream(),
-        // Folder kosong berarti taruh langsung di root Drive.
-        folderPath: folderPath.length > 0 ? folderPath : ["Umum"],
-      });
-
-      const { error } = await supabase.from("documents").insert({
-        name: stored.name,
-        mime_type: stored.mimeType,
-        size_bytes: stored.sizeBytes,
-        drive_file_id: stored.id,
-        drive_web_link: stored.webLink,
-        folder_id: folderId,
-        uploaded_by: user.id,
-      });
-
-      if (error) {
-        // Metadata gagal disimpan — buang lagi filenya supaya tidak jadi
-        // file yatim yang tak terlacak sistem.
-        await storage.remove(stored.id).catch(() => {});
-        failed.push(file.name);
-      }
-    } catch (error) {
-      console.error(`Gagal mengunggah ${file.name}:`, error);
-      failed.push(file.name);
-    }
-  }
-
-  revalidatePath("/documents");
-
-  if (failed.length > 0) {
-    return { error: `Gagal diunggah: ${failed.join(", ")}` };
-  }
   return { error: null };
 }
 

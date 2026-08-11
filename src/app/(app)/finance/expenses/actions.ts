@@ -2,10 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { uploadDocument } from "@/lib/actions/documents";
+import { parseRupiah, formatRupiah } from "@/lib/format";
+import { logActivity } from "@/lib/activity";
+import { EXPENSE_STATUS_LABEL } from "@/lib/types";
 import type { ExpenseCategory, ExpenseStatus } from "@/lib/types";
 
-export type FormState = { error: string | null; ok?: true };
+/**
+ * `expenseId` diisi kalau penyimpanan berhasil. Dipakai form di browser
+ * untuk mengunggah struk setelah pengeluarannya tercatat — struknya tidak
+ * ikut dikirim dalam form ini supaya ukurannya tidak dibatasi body request.
+ */
+export type FormState = { error: string | null; ok?: true; expenseId?: string };
 
 function text(formData: FormData, key: string) {
   const value = String(formData.get(key) ?? "").trim();
@@ -25,11 +32,10 @@ export async function createExpense(
   const title = text(formData, "title");
   if (!title) return { error: "Keterangan pengeluaran wajib diisi." };
 
-  // Input angka rupiah sering ditulis "150.000" — buang pemisah ribuan
-  // sebelum diubah jadi angka.
-  const rawAmount = String(formData.get("amount") ?? "").replace(/[.\s]/g, "");
-  const amount = Number(rawAmount.replace(",", "."));
-  if (!Number.isFinite(amount) || amount <= 0) {
+  // Angka rupiah yang diketik manusia ("150.000", "Rp 1.500.000") dibaca
+  // oleh parser bersama di lib/format, sama seperti di form pemasukan.
+  const amount = parseRupiah(formData.get("amount"));
+  if (amount === null) {
     return { error: "Jumlah harus berupa angka lebih dari nol." };
   }
 
@@ -45,6 +51,7 @@ export async function createExpense(
         new Date().toISOString().slice(0, 10),
       is_reimbursement: formData.get("is_reimbursement") === "on",
       client_id: text(formData, "client_id"),
+      project_id: text(formData, "project_id"),
       submitted_by: user.id,
     })
     .select("id")
@@ -55,22 +62,18 @@ export async function createExpense(
     return { error: "Gagal menyimpan pengeluaran." };
   }
 
-  // Struk opsional. Kalau uploadnya gagal, pengeluarannya tetap tersimpan —
-  // struk bisa dilampirkan menyusul dari halaman detail.
-  const receipt = formData.get("receipt");
-  if (receipt instanceof File && receipt.size > 0) {
-    const receiptData = new FormData();
-    receiptData.append("file", receipt);
-    const result = await uploadDocument({ expenseId: expense.id }, receiptData);
-    if (result.error) {
-      revalidatePath("/expenses");
-      return { error: `Pengeluaran tersimpan, tapi struk gagal diunggah: ${result.error}` };
-    }
-  }
+  await logActivity(supabase, {
+    actorId: user.id,
+    entityType: "expense",
+    entityId: expense.id,
+    action: "created",
+    summary: `mencatat pengeluaran "${title}" (${formatRupiah(amount)})`,
+  });
 
-  revalidatePath("/expenses");
+  revalidatePath("/finance/expenses");
+  revalidatePath("/finance");
   revalidatePath("/");
-  return { error: null, ok: true };
+  return { error: null, ok: true, expenseId: expense.id };
 }
 
 export async function updateExpenseStatus(
@@ -83,7 +86,7 @@ export async function updateExpenseStatus(
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase
+  const { data: expense } = await supabase
     .from("expenses")
     .update({
       status,
@@ -92,15 +95,50 @@ export async function updateExpenseStatus(
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq("id", expenseId);
+    .eq("id", expenseId)
+    .select("title")
+    .single();
 
-  revalidatePath("/expenses");
+  if (expense) {
+    await logActivity(supabase, {
+      actorId: user.id,
+      entityType: "expense",
+      entityId: expenseId,
+      action: "status_changed",
+      summary: `mengubah status pengeluaran "${expense.title}" jadi ${EXPENSE_STATUS_LABEL[status]}`,
+    });
+  }
+
+  revalidatePath("/finance/expenses");
+  revalidatePath("/finance");
   revalidatePath("/");
 }
 
 export async function deleteExpense(expenseId: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: expense } = await supabase
+    .from("expenses")
+    .select("title")
+    .eq("id", expenseId)
+    .single();
+
   await supabase.from("expenses").delete().eq("id", expenseId);
-  revalidatePath("/expenses");
+
+  if (expense) {
+    await logActivity(supabase, {
+      actorId: user?.id ?? null,
+      entityType: "expense",
+      entityId: null,
+      action: "deleted",
+      summary: `menghapus pengeluaran "${expense.title}"`,
+    });
+  }
+
+  revalidatePath("/finance/expenses");
+  revalidatePath("/finance");
   revalidatePath("/");
 }

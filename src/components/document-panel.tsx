@@ -1,56 +1,95 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import type { Document } from "@/lib/types";
 import { formatDate, formatFileSize } from "@/lib/format";
-import {
-  deleteDocument,
-  uploadDocument,
-  type DocumentLink,
-} from "@/lib/actions/documents";
+import { deleteDocument } from "@/lib/actions/documents";
+import type { DocumentLink } from "@/lib/documents/types";
+import { uploadFiles, type UploadProgress } from "@/lib/upload-client";
+import { UploadProgressBar } from "@/app/(app)/documents/file-browser";
 
 /**
- * Panel dokumen yang bisa dipasang di halaman klien, project, tugas, atau
- * pengeluaran. File-nya naik ke Google Drive, metadatanya ke Supabase —
- * lihat src/lib/actions/documents.ts.
+ * Panel dokumen yang bisa dipasang di halaman klien, project, tugas,
+ * catatan, rapat, atau pengeluaran.
+ *
+ * File-nya naik ke Google Drive, yang masuk Supabase cuma metadatanya
+ * (lihat src/lib/actions/documents.ts dan PRD §2.1) — di mana pun panel
+ * ini dipasang, tidak ada byte file yang menyentuh database. Folder
+ * tujuannya ditentukan dari `link`, dan sejak `ensureAppFolder` folder
+ * yang sama juga muncul di /documents, bukan cuma di Drive.
+ *
+ * `variant="inline"` melepas bingkai kartunya, untuk dipakai di dalam
+ * modal yang sudah punya bingkainya sendiri.
  */
 export function DocumentPanel({
   documents,
   link,
   title = "Dokumen",
+  variant = "card",
+  emptyLabel = "Belum ada dokumen.",
+  onChanged,
 }: {
   documents: Document[];
   link: DocumentLink;
   title?: string;
+  variant?: "card" | "inline";
+  emptyLabel?: string;
+  /**
+   * Dipanggil setelah daftar berubah, untuk pemakai yang daftarnya diambil
+   * sendiri lewat server action alih-alih dirender server — `router
+   * .refresh()` tidak menyentuh data seperti itu.
+   */
+  onChanged?: () => void;
 }) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
 
-  function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+  const pending = progress !== null;
+
+  async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
     setError(null);
+    const { failed } = await uploadFiles(
+      [file],
+      { kind: "link", link },
+      setProgress,
+    );
+    setProgress(null);
 
-    startTransition(async () => {
-      const result = await uploadDocument(link, formData);
-      setError(result.error);
-      // Kosongkan input supaya file yang sama bisa dipilih lagi kalau
-      // upload pertama gagal.
-      if (inputRef.current) inputRef.current.value = "";
-    });
+    // Kosongkan input supaya file yang sama bisa dipilih lagi kalau
+    // upload pertama gagal.
+    if (inputRef.current) inputRef.current.value = "";
+    setError(failed.length > 0 ? failed[0].reason : null);
+    router.refresh();
+    onChanged?.();
   }
 
+  const inline = variant === "inline";
+
   return (
-    <section className="card p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-base">{title}</h2>
+    <section className={inline ? "mt-4 border-t border-line pt-3" : "card p-4"}>
+      <div
+        className={`flex items-center justify-between gap-3 ${
+          inline ? "mb-2" : "mb-3"
+        }`}
+      >
+        {inline ? (
+          <span className="label mb-0">{title}</span>
+        ) : (
+          <h2 className="text-base">{title}</h2>
+        )}
         <button
           type="button"
-          className="btn btn-ghost text-xs"
+          className={
+            inline
+              ? "text-xs text-accent hover:underline disabled:opacity-50"
+              : "btn btn-ghost text-xs"
+          }
           onClick={() => inputRef.current?.click()}
           disabled={pending}
         >
@@ -64,6 +103,12 @@ export function DocumentPanel({
         />
       </div>
 
+      {progress && (
+        <div className="mb-3">
+          <UploadProgressBar progress={progress} />
+        </div>
+      )}
+
       {error && (
         <p className="mb-3 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
@@ -71,8 +116,14 @@ export function DocumentPanel({
       )}
 
       {documents.length === 0 ? (
-        <p className="py-4 text-center text-sm text-ink-subtle">
-          Belum ada dokumen. Maksimal 4MB per file.
+        <p
+          className={
+            inline
+              ? "text-xs text-ink-subtle"
+              : "py-4 text-center text-sm text-ink-subtle"
+          }
+        >
+          {emptyLabel}
         </p>
       ) : (
         <ul className="divide-y divide-line">
@@ -91,7 +142,7 @@ export function DocumentPanel({
                   {formatFileSize(doc.size_bytes)} · {formatDate(doc.created_at)}
                 </p>
               </div>
-              <DeleteDocumentButton documentId={doc.id} />
+              <DeleteDocumentButton documentId={doc.id} onDeleted={onChanged} />
             </li>
           ))}
         </ul>
@@ -100,7 +151,13 @@ export function DocumentPanel({
   );
 }
 
-function DeleteDocumentButton({ documentId }: { documentId: string }) {
+function DeleteDocumentButton({
+  documentId,
+  onDeleted,
+}: {
+  documentId: string;
+  onDeleted?: () => void;
+}) {
   const [pending, startTransition] = useTransition();
 
   return (
@@ -112,7 +169,10 @@ function DeleteDocumentButton({ documentId }: { documentId: string }) {
       onClick={() => {
         if (!confirm("Hapus dokumen ini? File akan dipindah ke Trash Drive."))
           return;
-        startTransition(() => deleteDocument(documentId));
+        startTransition(async () => {
+          await deleteDocument(documentId);
+          onDeleted?.();
+        });
       }}
     >
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">

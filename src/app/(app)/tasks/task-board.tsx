@@ -5,7 +5,8 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCorners,
   useDroppable,
   useSensor,
@@ -25,6 +26,8 @@ import {
   TASK_STATUS_ORDER,
   TASK_STATUS_TINT,
   type BoardColumn,
+  type Label,
+  type Member,
   type TaskStatus,
   type TaskWithRelations,
 } from "@/lib/types";
@@ -36,10 +39,14 @@ import { WipLimitControl } from "./wip-limit";
 export function TaskBoard({
   tasks,
   columns: columnConfig,
+  members,
+  labels,
   onOpenTask,
 }: {
   tasks: TaskWithRelations[];
   columns: BoardColumn[];
+  members: Member[];
+  labels: Label[];
   onOpenTask: (task: TaskWithRelations) => void;
 }) {
   // Salinan lokal supaya kartu langsung berpindah saat dilepas, tanpa
@@ -56,12 +63,24 @@ export function TaskBoard({
   }
 
   const sensors = useSensors(
-    // Jarak 5px supaya klik judul kartu tidak dianggap awal drag.
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // Tetikus: geser 5px sudah dianggap seret, jadi kartu terasa ringan.
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Sentuh: harus ditahan dulu. Kalau memakai jarak seperti tetikus,
+    // setiap usaha menggulir papan di HP akan tertangkap sebagai seretan
+    // kartu dan halamannya membeku di tempat.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 220, tolerance: 8 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
+
+  const labelsById = useMemo(() => {
+    const map = new Map<string, Label>();
+    for (const label of labels) map.set(label.id, label);
+    return map;
+  }, [labels]);
 
   const grouped = useMemo(() => {
     const map = new Map<TaskStatus, TaskWithRelations[]>(
@@ -82,6 +101,12 @@ export function TaskBoard({
   const activeTask = activeId
     ? (items.find((task) => task.id === activeId) ?? null)
     : null;
+
+  function labelsOf(task: TaskWithRelations) {
+    return task.label_ids
+      .map((id) => labelsById.get(id))
+      .filter((label): label is Label => label !== undefined);
+  }
 
   function columnOf(id: string): TaskStatus | null {
     if (TASK_STATUS_ORDER.includes(id as TaskStatus)) return id as TaskStatus;
@@ -166,7 +191,10 @@ export function TaskBoard({
             key={status}
             status={status}
             tasks={grouped.get(status) ?? []}
+            labelsOf={labelsOf}
             wipLimit={limits.get(status) ?? null}
+            members={members}
+            labels={labels}
             onOpenTask={onOpenTask}
           />
         ))}
@@ -181,7 +209,7 @@ export function TaskBoard({
             }}
             className="rotate-2 cursor-grabbing rounded-sm border p-2.5 shadow-lg"
           >
-            <TaskCardBody task={activeTask} />
+            <TaskCardBody task={activeTask} labels={labelsOf(activeTask)} />
           </div>
         )}
       </DragOverlay>
@@ -192,35 +220,62 @@ export function TaskBoard({
 function Column({
   status,
   tasks,
+  labelsOf,
   wipLimit,
+  members,
+  labels,
   onOpenTask,
 }: {
   status: TaskStatus;
   tasks: TaskWithRelations[];
+  labelsOf: (task: TaskWithRelations) => Label[];
   wipLimit: number | null;
+  members: Member[];
+  labels: Label[];
   onOpenTask: (task: TaskWithRelations) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const tint = TASK_STATUS_TINT[status];
   const overLimit = wipLimit !== null && tasks.length > wipLimit;
 
+  // Di HP keempat kolom berbaris ke bawah, jadi "Selesai" berada paling
+  // jauh dari jempol dan paling jarang dibuka. Dilipat sejak awal supaya
+  // tiga kolom yang aktif muat dalam satu-dua gulungan.
+  const [collapsed, setCollapsed] = useState(status === "done");
+
   return (
     <section className="flex flex-col">
       <header
-        className="border-b border-line px-3 py-2.5 text-center"
+        className="border-b border-line px-3 py-2.5"
         style={{ backgroundColor: tint.header }}
       >
-        <p className="text-sm font-medium text-ink">
-          {TASK_STATUS_LABEL[status]}
-        </p>
+        <button
+          type="button"
+          onClick={() => setCollapsed((current) => !current)}
+          aria-expanded={!collapsed}
+          className="flex w-full items-center justify-center gap-2 md:pointer-events-none"
+        >
+          <span className="text-sm font-medium text-ink">
+            {TASK_STATUS_LABEL[status]}
+          </span>
+          <span className="font-mono text-[11px] text-ink-muted">
+            {tasks.length}
+          </span>
+          <span className="ml-auto font-mono text-xs text-ink-muted md:hidden">
+            {collapsed ? "+" : "−"}
+          </span>
+        </button>
       </header>
 
       <div
         ref={setNodeRef}
-        className="flex flex-1 flex-col p-2.5 transition-colors"
-        style={{
-          backgroundColor: isOver ? tint.header : tint.body,
-        }}
+        // Kolom yang terlipat tetap ter-render (hanya disembunyikan lewat
+        // tinggi 0 di HP) supaya tetap bisa jadi tujuan seretan dan
+        // strukturnya tidak berubah saat dilipat.
+        className={`flex flex-1 flex-col p-2.5 transition-colors ${
+          collapsed ? "hidden md:flex" : ""
+        }`}
+        style={{ backgroundColor: isOver ? tint.header : tint.body }}
       >
         {/* Kartu dan input mengisi ruang yang tersisa, supaya penanda
             LIMIT selalu menempel di dasar kolom — sejajar antar kolom
@@ -235,13 +290,14 @@ function Column({
                 <SortableTaskCard
                   key={task.id}
                   task={task}
+                  labels={labelsOf(task)}
                   onOpen={() => onOpenTask(task)}
                 />
               ))}
             </ul>
           </SortableContext>
 
-          <QuickAdd status={status} />
+          <QuickAdd status={status} members={members} labels={labels} />
         </div>
 
         <div className="mt-3 border-t border-line/70 pt-2.5 text-center">

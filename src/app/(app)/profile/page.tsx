@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
-import { initials } from "@/lib/format";
+import { MemberAvatar } from "@/components/member-avatar";
 import { USER_ROLE_LABEL, type Profile } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 
@@ -54,9 +54,7 @@ export default async function ProfilePage() {
           <ul className="space-y-3">
             {(team ?? []).map((member: Profile) => (
               <li key={member.id} className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-soft font-mono text-xs text-forest">
-                  {initials(member.full_name)}
-                </span>
+                <MemberAvatar member={member} size="md" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">
                     {member.full_name}

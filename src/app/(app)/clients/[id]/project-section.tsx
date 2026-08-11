@@ -3,21 +3,35 @@
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import { Modal, SubmitButton } from "@/components/modal";
 import { ProjectStatusBadge } from "@/components/badge";
-import { formatDate } from "@/lib/format";
+import { DocumentPanel } from "@/components/document-panel";
+import { formatDate, formatRupiah } from "@/lib/format";
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_TRACK_LABEL,
+  type Document,
   type Project,
   type ProjectStatus,
 } from "@/lib/types";
-import { createProject, deleteProject, updateProjectStatus, type FormState } from "../actions";
+import {
+  createProject,
+  deleteProject,
+  updateProjectDeal,
+  updateProjectStatus,
+  type FormState,
+} from "../actions";
 
 export function ProjectSection({
   clientId,
   projects,
+  receivedByProject,
+  documents,
 }: {
   clientId: string;
   projects: Project[];
+  /** Total pemasukan berstatus "diterima" per project, dalam rupiah. */
+  receivedByProject: Record<string, number>;
+  /** Seluruh dokumen klien ini; disaring per project di tiap barisnya. */
+  documents: Document[];
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -46,6 +60,10 @@ export function ProjectSection({
               key={project.id}
               project={project}
               clientId={clientId}
+              received={receivedByProject[project.id] ?? 0}
+              documents={documents.filter(
+                (doc) => doc.project_id === project.id,
+              )}
             />
           ))}
         </ul>
@@ -61,9 +79,13 @@ export function ProjectSection({
 function ProjectRow({
   project,
   clientId,
+  received,
+  documents,
 }: {
   project: Project;
   clientId: string;
+  received: number;
+  documents: Document[];
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -106,6 +128,8 @@ function ProjectRow({
         </div>
       </div>
 
+      <DealRow project={project} clientId={clientId} received={received} />
+
       <select
         value={project.status}
         disabled={pending}
@@ -127,7 +151,135 @@ function ProjectRow({
           </option>
         ))}
       </select>
+
+      {/* `clientId` ikut dikirim supaya lampirannya mendarat di
+          /Clients/<klien>/<project>/ — folder yang sama dengan di Drive,
+          dan yang sama pula dengan yang tampil di /documents. */}
+      <DocumentPanel
+        documents={documents}
+        link={{ projectId: project.id, clientId }}
+        title="Lampiran project"
+        variant="inline"
+        emptyLabel="Belum ada lampiran untuk project ini."
+      />
     </li>
+  );
+}
+
+/**
+ * Baris uang sebuah project: nilai deal, berapa yang sudah masuk, sisanya.
+ *
+ * Nilainya bisa diubah di tempat karena angka deal paling sering berubah
+ * saat sedang menatap halaman kliennya — membuka form project penuh untuk
+ * mengubah satu angka adalah alasan bagus untuk menunda, lalu lupa.
+ */
+function DealRow({
+  project,
+  clientId,
+  received,
+}: {
+  project: Project;
+  clientId: string;
+  received: number;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(
+    project.deal_value == null ? "" : String(project.deal_value),
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function save() {
+    startTransition(async () => {
+      const result = await updateProjectDeal(project.id, clientId, value);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setError(null);
+      setEditing(false);
+    });
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-2">
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-xs text-ink-subtle">Rp</span>
+          <input
+            autoFocus
+            value={value}
+            inputMode="numeric"
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                save();
+              }
+              if (event.key === "Escape") setEditing(false);
+            }}
+            placeholder="10.000.000"
+            className="field w-40 py-1 text-xs"
+          />
+          <button
+            type="button"
+            onClick={save}
+            disabled={pending}
+            className="rounded bg-ink px-2 py-1 text-[11px] text-ink-inverse disabled:opacity-40"
+          >
+            {pending ? "…" : "Simpan"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="px-1 text-[11px] text-ink-muted hover:text-ink"
+          >
+            Batal
+          </button>
+        </div>
+        {error && <p className="mt-1 text-[11px] text-danger">{error}</p>}
+      </div>
+    );
+  }
+
+  if (project.deal_value == null) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="mt-2 text-xs text-accent hover:underline"
+      >
+        + Isi nilai deal
+      </button>
+    );
+  }
+
+  const deal = Number(project.deal_value);
+  const percent = deal > 0 ? Math.min(100, (received / deal) * 100) : 0;
+
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px]">
+        <span className="text-ink">{formatRupiah(deal)}</span>
+        <span className="text-ink-subtle">
+          masuk {formatRupiah(received)}
+          {received < deal && ` · sisa ${formatRupiah(deal - received)}`}
+        </span>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-accent hover:underline"
+        >
+          ubah
+        </button>
+      </div>
+      <div className="mt-1 h-1 overflow-hidden rounded-full bg-surface-sunken">
+        <div
+          className="h-full rounded-full bg-forest"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -209,6 +361,23 @@ function ProjectForm({
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="project-deal">
+          Nilai Deal (Rp)
+        </label>
+        <input
+          id="project-deal"
+          name="deal_value"
+          inputMode="numeric"
+          className="field"
+          placeholder="10.000.000"
+        />
+        <p className="mt-1 text-xs text-ink-subtle">
+          Boleh dikosongkan dulu. Kalau diisi, sisa tagihannya otomatis
+          terhitung dari pemasukan yang ditautkan ke project ini.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
