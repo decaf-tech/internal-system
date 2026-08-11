@@ -42,4 +42,22 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-client_secret_GOOGLE_CLIENT_ID.apps.googleusercontent.com.json
+# Kredensial OAuth yang diunduh dari Google Cloud Console. Pola, bukan nama
+# file tertentu — client bisa dibuat ulang kapan saja dan nama unduhannya
+# ikut berubah, dan yang berikutnya harus tetap terabaikan tanpa perlu
+# ingat mengedit baris ini.
+client_secret_*.json
+
+# --- Tidak ikut ke remote publik -------------------------------------
+# Repo ini publik. Yang di bawah ini disimpan lokal saja karena memuat
+# identitas internal (project ID Supabase, email tim & akun Drive, nama
+# klien) atau konteks bisnis yang tidak perlu terbaca siapa pun.
+
+# PRD & catatan perencanaan — memuat nama/peran tim, nama klien, keputusan
+# bisnis, dan identitas project Supabase/Google Cloud.
+docs/
+
+# Migration & skrip diagnostik — sebagian menembak alamat email tim
+# secara harfiah (mis. 005 mengatur super admin lewat email).
+supabase/migrations/
+supabase/diagnostics/

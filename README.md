@@ -1,6 +1,6 @@
 # Decaf — Sistem Internal
 
-Manajemen tugas, klien, dan operasional untuk tim Decaf (Abi, Ojan, Lija).
+Manajemen tugas, klien, dan operasional untuk tim internal Decaf.
 
 **Stack:** Next.js 16 · Supabase (Postgres + Auth) · Google Drive (penyimpanan file) · Vercel
 
@@ -29,10 +29,13 @@ tidak perlu disentuh.
 1. Buat project baru di [supabase.com](https://supabase.com) (free tier).
 2. Buka **SQL Editor → New query**, paste seluruh isi
    [`supabase/schema.sql`](supabase/schema.sql), lalu **Run**.
-   Lanjutkan dengan
-   [`supabase/migrations/002_board_and_calendar.sql`](supabase/migrations/002_board_and_calendar.sql)
-   — migration ini menambah warna kartu, tanggal mulai, batas WIP, dan
-   folder dokumen. Aman dijalankan berulang.
+   Lanjutkan dengan migration `002`–`007` secara berurutan. Semuanya aman
+   dijalankan berulang.
+
+   > Berkas migration **tidak ikut di repo ini** — sebagiannya menembak
+   > alamat email tim secara harfiah (mis. `005` menetapkan super admin
+   > lewat email), jadi disimpan lokal saja. Ada di `supabase/migrations/`
+   > pada mesin pengembang.
 3. Buka **Project Settings → API**, salin:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon` / `publishable` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -52,8 +55,8 @@ halaman **Profil** di dalam sistem (klik namanya di pojok kiri bawah).
 
 ### 2. Google Drive
 
-Semua file dimiliki akun **akun-drive-tim**. Ojan & Lija tidak perlu
-login ke akun ini — mereka mengakses file lewat sistem.
+Semua file dimiliki satu akun Google khusus tim (sebut saja **akun Drive tim**).
+Anggota lain tidak perlu login ke akun ini — mereka mengakses file lewat sistem.
 
 1. Pastikan akun itu sudah **2FA aktif**, dan backup code-nya disimpan di tempat
    aman (password manager tim).
@@ -64,24 +67,45 @@ login ke akun ini — mereka mengakses file lewat sistem.
 3. Buka [Google Cloud Console](https://console.cloud.google.com) **sambil login
    sebagai akun Drive tim**:
    - Buat project baru, misal `decaf-internal`.
-   - **APIs & Services → Library** → aktifkan **Google Drive API**.
-   - **OAuth consent screen** → pilih **External**, isi nama aplikasi & email.
-     Tambahkan `akun-drive-tim` sebagai **Test user**. Tidak perlu
-     publikasi/verifikasi — aplikasi ini hanya dipakai satu akun.
-   - **Credentials → Create Credentials → OAuth client ID** → tipe
-     **Web application**. Tambahkan
+   - **APIs & Services → Library** → cari **Google Drive API** → **Enable**.
+     Wajib — tanpa ini OAuth-nya bisa sukses tapi tiap panggilan Drive dibalas
+     `403 accessNotConfigured`.
+   - **Google Auth Platform** (nama baru untuk "OAuth consent screen") →
+     **Overview**, isi nama aplikasi & email support, **Audience: External**.
+     Di sub-menu **Audience**, tambahkan alamat akun Drive tim sebagai
+     **Test user**. Di sub-menu **Data Access**, tambahkan scope
+     `https://www.googleapis.com/auth/drive.file` saja — jangan yang lain
+     (lihat catatan scope di bawah).
+   - **Clients → Create client** → tipe **Web application**. Tambahkan
      `https://developers.google.com/oauthplayground` sebagai **Authorized
      redirect URI**. Salin Client ID & Client Secret.
 4. Tukarkan jadi refresh token lewat
    [OAuth Playground](https://developers.google.com/oauthplayground):
    - Klik ⚙ (kanan atas) → centang **Use your own OAuth credentials** → isi
      Client ID & Secret.
-   - Di panel kiri, isi scope: `https://www.googleapis.com/auth/drive.file`
-   - **Authorize APIs** → login sebagai akun Drive tim → **Exchange
-     authorization code for tokens** → salin **Refresh token**.
+   - Di panel kiri, kotak **"Input your own scopes"**, isi:
+     `https://www.googleapis.com/auth/drive.file`
+   - **Authorize APIs** → login sebagai akun Drive tim → muncul layar
+     "Google hasn't verified this app" → **Advanced → Go to … (unsafe)**,
+     normal untuk aplikasi yang belum diverifikasi → **Exchange authorization
+     code for tokens** → salin **Refresh token**.
+5. **Publish app ke Production.** Di **Google Auth Platform → Audience** →
+   **Publish app**. **Jangan lewati langkah ini** — selama status masih
+   *Testing*, refresh token kedaluwarsa otomatis tiap 7 hari, dan Drive akan
+   berhenti bekerja sendiri seminggu setelah deploy dengan error
+   `invalid_grant`. Karena scope-nya cuma `drive.file` (non-sensitive), publish
+   ini **tidak memicu proses verifikasi Google** — langsung aktif. Kalau
+   layarnya malah minta submit for verification, ada scope lain yang
+   ketercentang di Data Access dan harus dibuang dulu.
 
 > Scope `drive.file` sengaja dipilih (bukan `drive` penuh): aplikasi hanya bisa
 > menyentuh file yang dibuatnya sendiri, tidak bisa membaca isi Drive lainnya.
+> Konsekuensinya, `GOOGLE_DRIVE_ROOT_FOLDER_ID` yang dibuat manual lewat
+> drive.google.com juga tidak akan terbaca oleh `files.get` — itu normal.
+> Aplikasi tetap bisa menulis ke dalamnya (dipakai sebagai `parents` saat
+> membuat file/folder), cuma tidak bisa membaca metadatanya sendiri. Kode di
+> [`google-drive.ts`](src/lib/storage/google-drive.ts) memang tidak pernah
+> memanggil `files.get` pada folder root, jadi ini tidak menghalangi apa pun.
 
 ### 3. Jalankan di lokal
 
@@ -133,9 +157,12 @@ supabase/schema.sql   Skema database
 
 ## Catatan operasional
 
-- **Batas upload 4MB per file.** Ini batas body request serverless Vercel, bukan
-  batas Drive. Untuk file lebih besar perlu upload langsung dari browser ke
-  Drive (resumable upload) — belum diimplementasikan.
+- **Batas upload 512MB per file.** File dikirim langsung dari browser ke
+  Google Drive lewat resumable upload session — server aplikasi tidak pernah
+  memegang isi file, jadi plafon 4.5MB body request Vercel tidak berlaku.
+  Kalau pengiriman langsung gagal (jaringan memblokir googleapis.com, CORS
+  ditolak), file di bawah 4MB otomatis dicoba ulang lewat server sebagai
+  fallback — di jalur itu plafon 4.5MB Vercel berlaku penuh.
 - **Menghapus dokumen** memindahkan file ke Trash Drive, bukan menghapus
   permanen. Masih bisa dipulihkan 30 hari.
 - **Menghapus klien** ikut menghapus project & tugas terkait

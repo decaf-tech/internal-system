@@ -41,7 +41,12 @@ export function TaskWorkspace({
   const [view, setView] = useState<View>("board");
   const [filter, setFilter] = useState<TaskFilter>(EMPTY_FILTER);
   const [creating, setCreating] = useState<Draft | null>(null);
-  const [editing, setEditing] = useState<TaskWithRelations | null>(null);
+  // Yang disimpan ID-nya saja, bukan salinan tugasnya. Menyimpan objeknya
+  // berarti modal memegang potret dari saat ia dibuka: mengunggah lampiran
+  // memang menyegarkan data server lewat `router.refresh()`, tapi potret itu
+  // tidak ikut berubah, jadi file yang baru naik tidak muncul sampai modal
+  // ditutup dan dibuka lagi.
+  const [editingId, setEditingId] = useState<string | null>(null);
   // `true` (tanpa detail) berarti "buat rapat baru"; objek berarti sedang
   // membuka kemunculan rapat tertentu untuk diedit.
   const [eventModal, setEventModal] = useState<EventOccurrence | true | null>(
@@ -49,7 +54,18 @@ export function TaskWorkspace({
   );
 
   const closeCreate = useCallback(() => setCreating(null), []);
-  const closeEdit = useCallback(() => setEditing(null), []);
+  const closeEdit = useCallback(() => setEditingId(null), []);
+  const openTask = useCallback(
+    (task: TaskWithRelations) => setEditingId(task.id),
+    [],
+  );
+
+  // Tugas yang hilang dari daftar (dihapus) membuat ini null, dan modalnya
+  // menutup sendiri — perilaku yang memang diinginkan.
+  const editing = useMemo(
+    () => tasks.find((task) => task.id === editingId) ?? null,
+    [tasks, editingId],
+  );
   const closeEventModal = useCallback(() => setEventModal(null), []);
 
   // Filter berlaku untuk kedua tampilan. Menyaring papan lalu menemukan
@@ -105,13 +121,13 @@ export function TaskWorkspace({
           columns={columns}
           members={options.members}
           labels={options.labels}
-          onOpenTask={setEditing}
+          onOpenTask={openTask}
         />
       ) : (
         <TaskCalendar
           tasks={visible}
           eventSeries={events}
-          onOpenTask={setEditing}
+          onOpenTask={openTask}
           onOpenEvent={setEventModal}
           onCreateEvent={() => setEventModal(true)}
           onCreate={createFromCalendar}
