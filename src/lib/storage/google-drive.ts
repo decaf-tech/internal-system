@@ -5,6 +5,8 @@ import { auth as googleAuth, drive as driveApi } from "@googleapis/drive";
 import { googleDrive as googleDriveEnv } from "@/lib/env";
 import type {
   DownloadResult,
+  ResumableUpload,
+  ResumableUploadInput,
   StorageProvider,
   StoredFile,
   UploadInput,
@@ -12,7 +14,10 @@ import type {
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
-function createDriveClient() {
+const RESUMABLE_ENDPOINT =
+  "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable";
+
+function createOAuthClient() {
   const { clientId, clientSecret, refreshToken } = googleDriveEnv();
 
   const oauth2 = new googleAuth.OAuth2(clientId, clientSecret);
@@ -20,7 +25,7 @@ function createDriveClient() {
   // yang menukarnya jadi access token dan menyegarkannya sendiri.
   oauth2.setCredentials({ refresh_token: refreshToken });
 
-  return driveApi({ version: "v3", auth: oauth2 });
+  return oauth2;
 }
 
 /** Escape tanda kutip tunggal untuk query Drive API. */
@@ -29,7 +34,8 @@ function escapeQueryValue(value: string) {
 }
 
 export class GoogleDriveProvider implements StorageProvider {
-  private drive = createDriveClient();
+  private auth = createOAuthClient();
+  private drive = driveApi({ version: "v3", auth: this.auth });
   private rootFolderId = googleDriveEnv().rootFolderId;
 
   // Cache pemetaan path -> folderId selama umur instance, supaya upload
@@ -123,6 +129,74 @@ export class GoogleDriveProvider implements StorageProvider {
       mimeType: file.mimeType ?? input.mimeType,
       sizeBytes: Number(file.size ?? 0),
       webLink: file.webViewLink ?? null,
+    };
+  }
+
+  /**
+   * Minta Drive membuka sesi upload, lalu serahkan URL-nya ke browser.
+   *
+   * Yang keluar dari sini bukan token akun kita — melainkan URL sesi yang
+   * hanya berlaku untuk satu file, ke satu folder yang sudah kita tentukan,
+   * dan hangus setelah dipakai. Karena itu byte-nya aman dikirim langsung
+   * dari browser, dan batas 4.5MB body request Vercel tidak lagi berlaku.
+   */
+  async createResumableUpload(
+    input: ResumableUploadInput,
+  ): Promise<ResumableUpload> {
+    const folderId = await this.ensureFolder(input.folderPath);
+    const { token } = await this.auth.getAccessToken();
+    if (!token) {
+      throw new Error(
+        "Gagal menukar refresh token jadi access token Google Drive.",
+      );
+    }
+
+    const response = await fetch(RESUMABLE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        // Google hanya memasang header CORS pada sesi yang dibuat dengan
+        // Origin. Tanpa baris ini sesi tetap terbentuk, tapi browser akan
+        // ditolak saat mengirim byte-nya.
+        Origin: input.origin,
+        "X-Upload-Content-Type": input.mimeType,
+        "X-Upload-Content-Length": String(input.sizeBytes),
+      },
+      body: JSON.stringify({ name: input.name, parents: [folderId] }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Drive menolak permintaan sesi upload (${response.status}): ${await response.text()}`,
+      );
+    }
+
+    const uploadUrl = response.headers.get("location");
+    if (!uploadUrl) {
+      throw new Error("Drive tidak mengembalikan URL sesi upload.");
+    }
+
+    return { uploadUrl };
+  }
+
+  async getFile(fileId: string): Promise<StoredFile> {
+    const { data } = await this.drive.files.get({
+      fileId,
+      fields: "id, name, mimeType, size, webViewLink, parents",
+    });
+
+    if (!data.id) {
+      throw new Error(`File ${fileId} tidak ditemukan di Google Drive.`);
+    }
+
+    return {
+      id: data.id,
+      name: data.name ?? "file",
+      mimeType: data.mimeType ?? "application/octet-stream",
+      sizeBytes: Number(data.size ?? 0),
+      webLink: data.webViewLink ?? null,
+      parentIds: data.parents ?? [],
     };
   }
 

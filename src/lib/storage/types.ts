@@ -18,6 +18,16 @@ export interface StorageProvider {
 
   upload(input: UploadInput): Promise<StoredFile>;
 
+  /**
+   * Buka sesi upload yang byte-nya dikirim browser langsung ke provider,
+   * tanpa melewati server kita. Ini yang membuat file besar mungkin:
+   * server kita di Vercel cuma boleh menerima body ~4.5MB per request.
+   */
+  createResumableUpload(input: ResumableUploadInput): Promise<ResumableUpload>;
+
+  /** Baca metadata file yang sudah ada, mis. setelah upload langsung selesai. */
+  getFile(fileId: string): Promise<StoredFile>;
+
   /** Untuk dialirkan (stream) ke browser lewat route handler kita sendiri. */
   download(fileId: string): Promise<DownloadResult>;
 
@@ -33,6 +43,28 @@ export type UploadInput = {
   folderPath: string[];
 };
 
+export type ResumableUploadInput = {
+  name: string;
+  mimeType: string;
+  /** Ukuran file, dipakai provider untuk memvalidasi kiriman browser. */
+  sizeBytes: number;
+  folderPath: string[];
+  /**
+   * Origin halaman yang akan mengirim byte-nya (mis. https://decaf.vercel.app).
+   * Provider memasang izin lintas-asal berdasarkan ini — tanpa dikirim saat
+   * sesi dibuat, browser akan diblokir CORS waktu mengunggah.
+   */
+  origin: string;
+};
+
+export type ResumableUpload = {
+  /**
+   * URL sekali pakai untuk file ini saja. Boleh dikirim ke browser: dia
+   * tidak memberi akses ke file lain dan tidak mengandung token akun.
+   */
+  uploadUrl: string;
+};
+
 export type StoredFile = {
   /** ID file di sisi provider. Disimpan di kolom documents.drive_file_id. */
   id: string;
@@ -41,6 +73,11 @@ export type StoredFile = {
   sizeBytes: number;
   /** Link untuk dibuka manual di UI provider, kalau ada. */
   webLink: string | null;
+  /**
+   * ID folder induk. Hanya diisi oleh getFile — dipakai untuk memastikan
+   * file yang dilaporkan browser memang mendarat di folder yang kita minta.
+   */
+  parentIds?: string[];
 };
 
 export type DownloadResult = {

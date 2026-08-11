@@ -11,6 +11,40 @@ export function formatRupiah(amount: number) {
   return rupiah.format(amount);
 }
 
+/** "Rp1,2 jt" — untuk kolom sempit di HP, di mana angka penuh terpotong. */
+export function formatRupiahShort(amount: number) {
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+
+  if (abs >= 1_000_000_000)
+    return `${sign}Rp${trimZero(abs / 1_000_000_000)} M`;
+  if (abs >= 1_000_000) return `${sign}Rp${trimZero(abs / 1_000_000)} jt`;
+  if (abs >= 1_000) return `${sign}Rp${trimZero(abs / 1_000)} rb`;
+  return formatRupiah(amount);
+}
+
+function trimZero(value: number) {
+  return value.toFixed(1).replace(/[.,]0$/, "").replace(".", ",");
+}
+
+/**
+ * Angka rupiah yang diketik manusia: "150.000", "1.500.000,50", "Rp 75000".
+ * Titik dianggap pemisah ribuan dan koma pemisah desimal — kebiasaan
+ * Indonesia, bukan kebalikannya seperti yang diasumsikan `Number()`.
+ *
+ * Mengembalikan null kalau hasilnya bukan angka positif, supaya pemanggil
+ * yang memutuskan pesan kesalahannya.
+ */
+export function parseRupiah(input: FormDataEntryValue | null | undefined) {
+  const cleaned = String(input ?? "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+
+  const amount = Number(cleaned);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
 /** "12 Agu 2026" */
 export function formatDate(value: string | Date | null | undefined) {
   if (!value) return "—";

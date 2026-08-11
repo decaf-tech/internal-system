@@ -1,16 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { formatDate, formatFileSize } from "@/lib/format";
 import type { Document, Folder } from "@/lib/types";
 import { deleteDocument } from "@/lib/actions/documents";
-import {
-  createFolder,
-  deleteFolder,
-  renameFolder,
-  uploadToFolder,
-} from "./actions";
+import { uploadFiles, type UploadProgress } from "@/lib/upload-client";
+import { createFolder, deleteFolder, renameFolder } from "./actions";
 
 export type BrowserDocument = Document & {
   uploader: { full_name: string } | null;
@@ -33,24 +30,36 @@ export function FileBrowser({
   folders: Folder[];
   documents: BrowserDocument[];
 }) {
+  const router = useRouter();
   const folderId = currentFolder?.id ?? null;
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function upload(files: FileList | null) {
-    if (!files || files.length === 0) return;
+  const uploading = progress !== null;
 
-    const formData = new FormData();
-    for (const file of Array.from(files)) formData.append("files", file);
+  async function upload(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0 || uploading) return;
+
     setError(null);
+    const { failed } = await uploadFiles(
+      Array.from(fileList),
+      { kind: "folder", folderId },
+      setProgress,
+    );
+    setProgress(null);
+    if (inputRef.current) inputRef.current.value = "";
 
-    startTransition(async () => {
-      const result = await uploadToFolder(folderId, formData);
-      setError(result.error);
-      if (inputRef.current) inputRef.current.value = "";
-    });
+    setError(
+      failed.length > 0
+        ? `Gagal diunggah: ${failed.map((f) => `${f.name} — ${f.reason}`).join("; ")}`
+        : null,
+    );
+
+    // Daftar file digambar di server, jadi minta halaman ini diambil ulang
+    // setelah unggahan selesai.
+    router.refresh();
   }
 
   const empty = folders.length === 0 && documents.length === 0;
@@ -65,10 +74,10 @@ export function FileBrowser({
           <button
             type="button"
             className="btn btn-accent"
-            disabled={pending}
+            disabled={uploading}
             onClick={() => inputRef.current?.click()}
           >
-            {pending ? "Mengunggah…" : "+ Unggah File"}
+            {uploading ? "Mengunggah…" : "+ Unggah File"}
           </button>
           <input
             ref={inputRef}
@@ -79,6 +88,8 @@ export function FileBrowser({
           />
         </div>
       </div>
+
+      {progress && <UploadProgressBar progress={progress} />}
 
       {error && (
         <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
@@ -122,9 +133,40 @@ export function FileBrowser({
       </div>
 
       <p className="text-xs text-ink-subtle">
-        Maksimal 4MB per file. File tersimpan di Google Drive tim; folder yang
-        dibuat di sini ikut terbentuk di Drive dengan struktur yang sama.
+        File dikirim langsung dari browser ke Google Drive tim, jadi tidak ada
+        batas 4MB lagi — maksimal 512MB per file. Folder yang dibuat di sini
+        ikut terbentuk di Drive dengan struktur yang sama.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Bilah progres unggahan. Untuk file besar ini yang membedakan "sedang
+ * berjalan" dari "aplikasinya hang".
+ */
+export function UploadProgressBar({ progress }: { progress: UploadProgress }) {
+  return (
+    <div className="rounded-md border border-line bg-surface px-3 py-2">
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <p className="min-w-0 truncate text-xs text-ink-muted">
+          {progress.count > 1 && (
+            <span className="font-mono text-ink-subtle">
+              {progress.index}/{progress.count}{" "}
+            </span>
+          )}
+          {progress.name}
+        </p>
+        <span className="font-mono text-[11px] text-ink-subtle">
+          {progress.percent}%
+        </span>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-200"
+          style={{ width: `${progress.percent}%` }}
+        />
+      </div>
     </div>
   );
 }
