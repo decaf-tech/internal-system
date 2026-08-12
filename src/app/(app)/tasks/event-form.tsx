@@ -130,7 +130,7 @@ function MeetingNotes({
                 aria-label={`Lepas kaitan "${note.title || "Tanpa judul"}"`}
                 title="Lepas kaitan (catatannya tidak dihapus)"
                 disabled={pending}
-                className="shrink-0 rounded p-1 text-ink-subtle opacity-0 transition-opacity hover:bg-danger-soft hover:text-danger focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-50"
+                className="icon-btn icon-btn-danger transition-opacity [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                 onClick={() => {
                   setNotes((current) =>
                     (current ?? []).filter((entry) => entry.id !== note.id),
@@ -655,7 +655,7 @@ export function EventForm({
       )}
 
       {error && (
-        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       )}

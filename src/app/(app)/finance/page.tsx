@@ -7,6 +7,7 @@ import { formatRupiah, formatRupiahShort } from "@/lib/format";
 import { parseKey } from "@/lib/date-range";
 import type { CashflowMonth } from "@/lib/types";
 import { FinanceTabs } from "./tabs";
+import { FinanceQuickActions } from "./quick-actions";
 
 /** Berapa bulan terakhir yang digambar di grafik batang. */
 const MONTHS_SHOWN = 6;
@@ -21,26 +22,39 @@ type DealRow = {
 export default async function FinanceOverviewPage() {
   const supabase = await createClient();
 
-  const [cashflow, outstandingResult, dealsResult, receivedResult] =
-    await Promise.all([
-      loadCashflow(supabase),
-      // Uang yang sudah disepakati tapi belum masuk — angka yang paling
-      // sering ditanyakan setelah "bulan ini masuk berapa".
-      supabase
-        .from("incomes")
-        .select("amount, status, due_date")
-        .neq("status", "received"),
-      supabase
-        .from("projects")
-        .select("id, name, deal_value, client:clients(name)")
-        .not("deal_value", "is", null)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("incomes")
-        .select("project_id, amount")
-        .eq("status", "received")
-        .not("project_id", "is", null),
-    ]);
+  const [
+    cashflow,
+    outstandingResult,
+    dealsResult,
+    receivedResult,
+    clientsResult,
+    projectsResult,
+  ] = await Promise.all([
+    loadCashflow(supabase),
+    // Uang yang sudah disepakati tapi belum masuk — angka yang paling
+    // sering ditanyakan setelah "bulan ini masuk berapa".
+    supabase
+      .from("incomes")
+      .select("amount, status, due_date")
+      .neq("status", "received"),
+    supabase
+      .from("projects")
+      .select("id, name, deal_value, client:clients(name)")
+      .not("deal_value", "is", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("incomes")
+      .select("project_id, amount")
+      .eq("status", "received")
+      .not("project_id", "is", null),
+    // Isi dropdown kedua form catat. Satu query melayani keduanya —
+    // form pemasukan memakai `deal_value`, form pengeluaran tidak.
+    supabase.from("clients").select("id, name").order("name"),
+    supabase
+      .from("projects")
+      .select("id, name, client_id, deal_value")
+      .order("name"),
+  ]);
 
   const outstanding = (outstandingResult.data ?? []).reduce(
     (sum, row) => sum + Number(row.amount),
@@ -72,17 +86,30 @@ export default async function FinanceOverviewPage() {
 
   const deals = (dealsResult.data ?? []) as unknown as DealRow[];
 
+  const clients = clientsResult.data ?? [];
+  const projects = projectsResult.data ?? [];
+
   return (
     <>
       <PageHeader
         eyebrow="03 · Keuangan"
         title="Cashflow"
         description="Uang yang masuk, uang yang keluar, dan sisanya."
+        action={
+          <FinanceQuickActions
+            incomeOptions={{ clients, projects }}
+            expenseOptions={{ clients, projects }}
+          />
+        }
       />
 
       <FinanceTabs active="/finance" />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Dua kolom sejak layar tersempit: empat kartu bertumpuk satu-satu
+          mendorong grafiknya ke bawah lipatan, dan yang dicari orang saat
+          membuka halaman ini justru "bulan ini bagaimana" — bukan salah
+          satu angkanya sendirian. */}
+      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat
           label="Kas Masuk Bulan Ini"
           value={formatRupiah(current.cash_in)}
@@ -126,7 +153,19 @@ export default async function FinanceOverviewPage() {
         <div className="flex items-end gap-2 sm:gap-4">
           {months.map((month) => (
             <div key={month.month} className="flex min-w-0 flex-1 flex-col">
-              <div className="flex h-32 items-end justify-center gap-1">
+              {/* Judul bulan + kedua nilainya dititipkan ke satu label di
+                  induknya, bukan ke atribut `title` tiap batang: `title`
+                  cuma muncul saat kursor berhenti di atasnya, dan di HP
+                  tidak ada kursor yang bisa berhenti di mana pun. */}
+              <div
+                role="img"
+                aria-label={`${format(parseKey(month.month), "MMMM yyyy", {
+                  locale: localeId,
+                })}: masuk ${formatRupiah(
+                  month.cash_in,
+                )}, keluar ${formatRupiah(month.cash_out)}`}
+                className="flex h-32 items-end justify-center gap-1"
+              >
                 <Bar
                   value={month.cash_in}
                   peak={peak}
@@ -158,11 +197,14 @@ export default async function FinanceOverviewPage() {
       <section className="card p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base">Deal per Project</h2>
+          {/* Label lamanya "Catat pemasukan", padahal tautannya membuka
+              daftar — bukan formnya. Sekarang formnya memang ada di
+              kepala halaman ini, jadi tautannya cukup jujur saja. */}
           <Link
             href="/finance/income"
-            className="text-xs text-accent hover:underline"
+            className="-mr-2 rounded px-2 py-2 text-xs text-accent hover:underline"
           >
-            Catat pemasukan →
+            Semua pemasukan →
           </Link>
         </div>
 
@@ -356,9 +398,13 @@ function Stat({
         : "text-ink";
 
   return (
-    <div className="card p-4">
+    <div className="card p-3 sm:p-4">
       <p className="eyebrow">{label}</p>
-      <p className={`mt-1.5 font-serif text-xl ${color}`}>{value}</p>
+      {/* tabular-nums: tanpa itu, angka rupiah di empat kartu bersebelahan
+          punya lebar digit yang berbeda-beda dan barisnya terlihat goyah. */}
+      <p className={`mt-1.5 font-serif text-lg tabular-nums sm:text-xl ${color}`}>
+        {value}
+      </p>
       {hint && <p className="mt-0.5 text-xs text-ink-subtle">{hint}</p>}
     </div>
   );

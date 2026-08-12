@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { renderMarkdown } from "@/lib/markdown";
 
 /**
@@ -17,7 +24,10 @@ import { renderMarkdown } from "@/lib/markdown";
  *
  * Yang tetap harus terasa seperti editor sungguhan ditangani di sini:
  * seleksi yang tidak lompat setelah tombol ditekan, daftar yang menyambung
- * sendiri saat Enter, dan pratinjau satu ketukan.
+ * sendiri saat Enter, dan pratinjau yang ikut berubah sambil diketik.
+ *
+ * Pratinjaunya bersisian, bukan bergantian, di layar yang cukup lebar —
+ * lihat komentar di `useWideScreen` untuk kenapa itu tidak berlaku di HP.
  */
 type BlockStyle = {
   /** Penanda yang disisipkan. Diberi nomor baris untuk daftar bernomor. */
@@ -59,6 +69,41 @@ const BLOCK_STYLES: Record<string, BlockStyle> = {
   },
 };
 
+/**
+ * Lebar minimum kotak editor sebelum dibagi dua, dalam piksel. Di bawah
+ * ini tiap kolom tinggal ~45 karakter per baris — teknisnya "bersisian",
+ * praktiknya dua kolom yang sama-sama sesak.
+ */
+const SPLIT_MIN_WIDTH = 832;
+
+/**
+ * Apakah kotak editornya cukup lebar untuk dua kolom.
+ *
+ * Yang diukur lebar elemennya sendiri, bukan lebar layar. Editor ini
+ * duduk di dalam kartu ber-`max-w`, jadi layar 1440px tidak berarti
+ * editornya 1440px — dan `matchMedia` tidak tahu bedanya. Kalau kelak
+ * dipasang di kolom sempit (panel samping, modal), pratinjaunya akan
+ * bergantian di situ tanpa ada yang perlu diubah di sini.
+ */
+function useSplitCapable(ref: React.RefObject<HTMLElement | null>) {
+  // Dimulai dari false, jadi render pertama di browser sama persis dengan
+  // HTML dari server — pengukuran baru masuk setelahnya.
+  const [capable, setCapable] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      setCapable(entry.contentRect.width >= SPLIT_MIN_WIDTH);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return capable;
+}
+
 export function MarkdownEditor({
   value,
   onChange,
@@ -73,7 +118,28 @@ export function MarkdownEditor({
   minHeight?: string;
 }) {
   const areaRef = useRef<HTMLTextAreaElement>(null);
-  const [preview, setPreview] = useState(false);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const wide = useSplitCapable(frameRef);
+
+  // "split" cuma berlaku di layar lebar; kalau layarnya menyempit
+  // (jendela dikecilkan, HP diputar tegak) yang tampil jatuh balik ke
+  // menulis saja, tanpa perlu state kedua yang harus ikut disinkronkan.
+  const [mode, setMode] = useState<"write" | "preview" | "split">("split");
+  const showEditor = mode !== "preview";
+  const showPreview = mode === "preview" || (mode === "split" && wide);
+
+  // Isi pratinjau tertinggal satu tarikan napas di belakang ketikan saat
+  // React sedang sibuk. Tanpa ini, tiap huruf yang diketik di notulen
+  // panjang memaksa parser Markdown berjalan ulang sebelum huruf itu
+  // sendiri sempat tergambar — dan yang terasa adalah ketikan yang berat.
+  const previewSource = useDeferredValue(value);
+  const html = useMemo(
+    () =>
+      previewSource.trim().length > 0
+        ? renderMarkdown(previewSource)
+        : `<p class="empty">Belum ada isi.</p>`,
+    [previewSource],
+  );
 
   // Posisi kursor yang harus dipulihkan setelah render berikutnya. Nilai
   // textarea dikendalikan induk, jadi setiap perubahan membuat React
@@ -97,10 +163,10 @@ export function MarkdownEditor({
   // ke atas.
   useEffect(() => {
     const area = areaRef.current;
-    if (!area || preview) return;
+    if (!area || !showEditor) return;
     area.style.height = "auto";
     area.style.height = `${area.scrollHeight}px`;
-  }, [value, preview]);
+  }, [value, showEditor]);
 
   function apply(next: string, selectionStart: number, selectionEnd: number) {
     pendingSelection.current = [selectionStart, selectionEnd];
@@ -235,9 +301,12 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-line-strong bg-surface">
-      {/* Deretan alat menggulir sendiri di layar sempit, tapi tombol
-          Pratinjau tetap menempel di kanan — kalau ikut menggulir, tombol
+    <div
+      ref={frameRef}
+      className="overflow-hidden rounded-md border border-line-strong bg-surface"
+    >
+      {/* Deretan alat menggulir sendiri di layar sempit, tapi pengalih
+          tampilan tetap menempel di kanan — kalau ikut menggulir, tombol
           yang paling sering dicari justru yang tersembunyi di HP. */}
       <div className="flex items-center border-b border-line bg-surface-muted pr-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto px-1.5 py-1">
@@ -296,46 +365,76 @@ export function MarkdownEditor({
           </ToolButton>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setPreview((current) => !current)}
-          aria-pressed={preview}
-          className={`shrink-0 rounded px-2.5 py-1 text-xs transition-colors ${
-            preview
-              ? "bg-ink text-ink-inverse"
-              : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
-          }`}
+        {/* Di layar lebar pilihannya tiga (tulis / sandingkan / baca), di
+            HP cuma dua — "sandingkan" tidak ditawarkan di tempat yang
+            tidak sanggup menampungnya. */}
+        <div
+          role="group"
+          aria-label="Tampilan editor"
+          className="flex shrink-0 items-center gap-0.5"
         >
-          {preview ? "Tulis" : "Pratinjau"}
-        </button>
+          {/* Yang ditandai aktif adalah apa yang BENAR-BENAR tampil, bukan
+              nilai `mode`. Di layar sempit mode "split" jatuh balik jadi
+              menulis saja — dan kalau tandanya dibaca dari `mode`, tidak
+              ada satu pun tombol yang menyala di situ. */}
+          <ViewButton
+            active={showEditor && !showPreview}
+            onClick={() => setMode("write")}
+          >
+            Tulis
+          </ViewButton>
+          {wide && (
+            <ViewButton
+              active={showEditor && showPreview}
+              onClick={() => setMode("split")}
+            >
+              Sandingkan
+            </ViewButton>
+          )}
+          <ViewButton
+            active={showPreview && !showEditor}
+            onClick={() => setMode("preview")}
+          >
+            {wide ? "Hasil" : "Pratinjau"}
+          </ViewButton>
+        </div>
       </div>
 
-      {preview ? (
-        <div
-          style={{ minHeight }}
-          className="prose-note px-4 py-3.5"
-          // Aman: renderMarkdown meng-escape seluruh teks sebelum menandai,
-          // dan hanya menghasilkan tag miliknya sendiri. Lihat lib/markdown.ts.
-          dangerouslySetInnerHTML={{
-            __html:
-              value.trim().length > 0
-                ? renderMarkdown(value)
-                : `<p class="empty">Belum ada isi.</p>`,
-          }}
-        />
-      ) : (
-        <textarea
-          ref={areaRef}
-          value={value}
-          autoFocus={autoFocus}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          spellCheck
-          style={{ minHeight }}
-          className="block w-full resize-none bg-transparent px-4 py-3.5 text-sm leading-relaxed text-ink outline-none placeholder:text-ink-subtle"
-        />
-      )}
+      {/* Dua kolom yang menggulir bersama halaman, bukan masing-masing di
+          dalam kotaknya sendiri: satu-satunya cara menulis dan membaca
+          hasilnya tanpa dua bilah gulir yang saling berebut roda mouse. */}
+      <div className={showEditor && showPreview ? "grid grid-cols-2" : ""}>
+        {showEditor && (
+          <textarea
+            ref={areaRef}
+            value={value}
+            autoFocus={autoFocus}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            spellCheck
+            aria-label="Isi catatan (Markdown)"
+            style={{ minHeight }}
+            // text-base di HP, sama alasannya dengan `.field` di
+            // globals.css: huruf di bawah 16px membuat Safari iOS
+            // memperbesar halaman begitu kursor masuk.
+            className="block w-full resize-none bg-transparent px-4 py-3.5 text-base leading-relaxed text-ink outline-none placeholder:text-ink-subtle sm:text-sm"
+          />
+        )}
+
+        {showPreview && (
+          <div
+            aria-live="off"
+            style={{ minHeight }}
+            className={`prose-note px-4 py-3.5 ${
+              showEditor ? "border-l border-line bg-surface-muted/40" : ""
+            }`}
+            // Aman: renderMarkdown meng-escape seluruh teks sebelum menandai,
+            // dan hanya menghasilkan tag miliknya sendiri. Lihat lib/markdown.ts.
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -371,6 +470,31 @@ function ToolButton({
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-sm text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+    >
+      {children}
+    </button>
+  );
+}
+
+function ViewButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 rounded px-2.5 py-1.5 text-xs whitespace-nowrap transition-colors ${
+        active
+          ? "bg-ink text-ink-inverse"
+          : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+      }`}
     >
       {children}
     </button>

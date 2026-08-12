@@ -55,13 +55,13 @@ export function MemberRow({
               value={name}
               onChange={(event) => setName(event.target.value)}
               aria-label="Nama"
-              className="field w-40 py-1 text-xs"
+              className="field w-40 py-1 text-base sm:text-xs"
             />
             <select
               value={role}
               onChange={(event) => setRole(event.target.value as UserRole)}
               aria-label="Peran"
-              className="field w-auto py-1 text-xs"
+              className="field w-auto py-1 text-base sm:text-xs"
             >
               {Object.entries(USER_ROLE_LABEL).map(([value, label]) => (
                 <option key={value} value={value}>

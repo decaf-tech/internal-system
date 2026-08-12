@@ -27,14 +27,22 @@ export type IncomeFormOptions = {
   projects: Pick<Project, "id" | "name" | "client_id" | "deal_value">[];
 };
 
-export function NewIncomeButton({ options }: { options: IncomeFormOptions }) {
+export function NewIncomeButton({
+  options,
+  className = "btn btn-accent flex-1 sm:flex-none",
+  label = "+ Catat Pemasukan",
+}: {
+  options: IncomeFormOptions;
+  className?: string;
+  label?: string;
+}) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
 
   return (
     <>
-      <button className="btn btn-accent" onClick={() => setOpen(true)}>
-        + Catat Pemasukan
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        {label}
       </button>
       <Modal open={open} onClose={close} title="Pemasukan Baru">
         {open && (
@@ -243,7 +251,7 @@ function IncomeForm({
       </div>
 
       {state.error && (
-        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}
@@ -313,7 +321,7 @@ export function IncomeCard({
           value={income.status}
           disabled={pending}
           aria-label={`Ubah status ${income.title}`}
-          className="field w-auto py-1 text-xs"
+          className="field w-auto py-1 text-base sm:text-xs"
           onChange={(event) =>
             startTransition(() =>
               updateIncomeStatus(
@@ -334,15 +342,15 @@ export function IncomeCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded px-2 py-1 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="rounded px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
           >
             Ubah
           </button>
           <button
             type="button"
-            aria-label="Hapus pemasukan"
+            aria-label={`Hapus pemasukan ${income.title}`}
             disabled={pending}
-            className="rounded p-1.5 text-ink-subtle hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+            className="icon-btn icon-btn-danger"
             onClick={() => {
               if (!confirm(`Hapus catatan "${income.title}"?`)) return;
               startTransition(() => deleteIncome(income.id));

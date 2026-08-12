@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import type { Document } from "@/lib/types";
 import { formatDate, formatFileSize } from "@/lib/format";
 import { deleteDocument } from "@/lib/actions/documents";
 import type { DocumentLink } from "@/lib/documents/types";
 import { uploadFiles, type UploadProgress } from "@/lib/upload-client";
-import { UploadProgressBar } from "@/app/(app)/documents/file-browser";
+import { FilePickButton } from "@/components/file-picker";
+import { ConfirmDialog } from "@/components/modal";
+import { UploadProgressBar } from "@/components/upload-progress";
 
 /**
  * Panel dokumen yang bisa dipasang di halaman klien, project, tugas,
@@ -43,27 +45,20 @@ export function DocumentPanel({
   onChanged?: () => void;
 }) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
 
   const pending = progress !== null;
 
-  async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  async function handleFiles(files: File[]) {
     setError(null);
     const { failed } = await uploadFiles(
-      [file],
+      files,
       { kind: "link", link },
       setProgress,
     );
     setProgress(null);
 
-    // Kosongkan input supaya file yang sama bisa dipilih lagi kalau
-    // upload pertama gagal.
-    if (inputRef.current) inputRef.current.value = "";
     setError(failed.length > 0 ? failed[0].reason : null);
     router.refresh();
     onChanged?.();
@@ -83,24 +78,19 @@ export function DocumentPanel({
         ) : (
           <h2 className="text-base">{title}</h2>
         )}
-        <button
-          type="button"
+        <FilePickButton
+          onFiles={handleFiles}
+          multiple
+          disabled={pending}
+          sheetTitle="Lampirkan berkas dari"
           className={
             inline
-              ? "text-xs text-accent hover:underline disabled:opacity-50"
+              ? "shrink-0 rounded px-2 py-1.5 text-xs text-accent hover:bg-accent-soft disabled:opacity-50"
               : "btn btn-ghost text-xs"
           }
-          onClick={() => inputRef.current?.click()}
-          disabled={pending}
         >
           {pending ? "Mengunggah…" : "+ Unggah"}
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          onChange={handleFile}
-        />
+        </FilePickButton>
       </div>
 
       {progress && (
@@ -159,31 +149,40 @@ function DeleteDocumentButton({
   onDeleted?: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [confirming, setConfirming] = useState(false);
 
   return (
-    <button
-      type="button"
-      aria-label="Hapus dokumen"
-      disabled={pending}
-      className="shrink-0 rounded p-1.5 text-ink-subtle hover:bg-danger-soft hover:text-danger disabled:opacity-50"
-      onClick={() => {
-        if (!confirm("Hapus dokumen ini? File akan dipindah ke Trash Drive."))
-          return;
-        startTransition(async () => {
-          await deleteDocument(documentId);
-          onDeleted?.();
-        });
-      }}
-    >
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-        <path
-          d="M3 4.5h10M6.5 4V2.5h3V4M4.5 4.5l.5 9h6l.5-9"
-          stroke="currentColor"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </button>
+    <>
+      <button
+        type="button"
+        aria-label="Hapus dokumen"
+        disabled={pending}
+        className="icon-btn icon-btn-danger"
+        onClick={() => setConfirming(true)}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M3 4.5h10M6.5 4V2.5h3V4M4.5 4.5l.5 9h6l.5-9"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title="Hapus Dokumen"
+        message="Hapus dokumen ini? File akan dipindah ke Trash Drive."
+        onConfirm={() => {
+          startTransition(async () => {
+            await deleteDocument(documentId);
+            onDeleted?.();
+          });
+        }}
+      />
+    </>
   );
 }

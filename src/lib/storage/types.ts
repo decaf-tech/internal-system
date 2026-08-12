@@ -32,7 +32,16 @@ export interface StorageProvider {
   download(fileId: string): Promise<DownloadResult>;
 
   remove(fileId: string): Promise<void>;
+
+  /** Kuota penyimpanan akun Drive yang dipakai — untuk indikator sisa ruang. */
+  getQuota(): Promise<StorageQuota>;
 }
+
+export type StorageQuota = {
+  usageBytes: number;
+  /** `null` kalau akun tidak berbatas kuota (mis. Google Workspace tertentu). */
+  limitBytes: number | null;
+};
 
 export type UploadInput = {
   name: string;

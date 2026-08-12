@@ -50,6 +50,10 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    /* Kotak sorot abu-abu bawaan Android saat menyentuh tombol datang
+       terlambat dan menempel terlalu lama; umpan balik sentuhnya diurus
+       sendiri lewat :active di bawah. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1,
@@ -58,6 +62,37 @@
     font-family: var(--font-serif);
     font-weight: 600;
     letter-spacing: -0.01em;
+  }
+
+  /* Ketukan tidak perlu menunggu 300ms untuk memastikan bukan ketukan
+     ganda — tidak ada satu pun elemen di sistem ini yang memakai
+     ketukan ganda. */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* Cincin fokus yang sama untuk semua yang bisa dituju keyboard. Tanpa
+     ini, tombol yang latarnya sudah gelap (btn-primary) praktis tidak
+     kelihatan sedang difokus. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -79,16 +114,34 @@
   }
 
   /* Field form: satu kelas dipakai input, select, dan textarea supaya
-     tinggi & fokus ring-nya konsisten di seluruh sistem. */
+     tinggi & fokus ring-nya konsisten di seluruh sistem.
+
+     Ukuran hurufnya 16px di layar sempit dan baru mengecil jadi 14px di
+     layar lebar. Ini bukan soal keterbacaan: Safari iOS memperbesar
+     seluruh halaman begitu kursor masuk ke input yang hurufnya di bawah
+     16px, dan halaman yang sudah terlanjur diperbesar itu tidak
+     mengecil sendiri setelah selesai mengetik. */
   .field {
     width: 100%;
     background-color: var(--color-surface);
     border: 1px solid var(--color-line-strong);
     border-radius: 0.375rem;
     padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
     color: var(--color-ink);
     outline: none;
+  }
+  @media (min-width: 640px) {
+    .field {
+      font-size: 0.875rem;
+    }
+  }
+  /* Layar sentuh: tinggi minimum satu sasaran jempol (44px). Di layar
+     berkursor tetap serapat sebelumnya. */
+  @media (pointer: coarse) {
+    .field {
+      min-height: 2.75rem;
+    }
   }
   .field::placeholder {
     color: var(--color-ink-subtle);
@@ -117,6 +170,7 @@
     gap: 0.5rem;
     border-radius: 0.375rem;
     padding: 0.5rem 1rem;
+    min-height: 2.5rem;
     font-size: 0.875rem;
     font-weight: 500;
     border: 1px solid transparent;
@@ -124,10 +178,60 @@
     transition:
       background-color 0.15s ease,
       border-color 0.15s ease,
-      color 0.15s ease;
+      color 0.15s ease,
+      opacity 0.1s ease;
+  }
+  @media (pointer: coarse) {
+    .btn {
+      min-height: 2.75rem;
+    }
   }
   .btn:disabled {
     opacity: 0.55;
+    cursor: not-allowed;
+  }
+  /* Di layar sentuh tidak ada hover, jadi tanpa ini sebuah ketukan tidak
+     meninggalkan jejak apa pun sampai halamannya berpindah — dan orang
+     menekannya dua kali. */
+  @media (hover: none) {
+    .btn:active:not(:disabled) {
+      opacity: 0.7;
+    }
+  }
+
+  /* Tombol yang isinya cuma ikon. Ikonnya tetap kecil (14–18px), yang
+     dibesarkan area sentuhnya — 44px di layar sentuh, seukuran ikon di
+     layar berkursor supaya deretan di dalam baris daftar tidak melar. */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 2rem;
+    width: 2rem;
+    border-radius: 0.375rem;
+    color: var(--color-ink-subtle);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+  @media (pointer: coarse) {
+    .icon-btn {
+      height: 2.75rem;
+      width: 2.75rem;
+    }
+  }
+  .icon-btn:hover:not(:disabled) {
+    background-color: var(--color-surface-muted);
+    color: var(--color-ink);
+  }
+  .icon-btn-danger:hover:not(:disabled) {
+    background-color: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+  .icon-btn:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
@@ -154,6 +258,14 @@
   }
   .btn-ghost:hover:not(:disabled) {
     background-color: var(--color-surface-muted);
+  }
+
+  .btn-danger {
+    background-color: var(--color-danger);
+    color: #fff;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background-color: #8a2f23;
   }
 
   .badge {

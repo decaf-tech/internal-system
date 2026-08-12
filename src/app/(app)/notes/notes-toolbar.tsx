@@ -25,8 +25,9 @@ export function NewNoteButtons() {
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
       <button
+        type="button"
         className="btn btn-ghost"
         disabled={pending}
         onClick={() => create("note")}
@@ -34,6 +35,7 @@ export function NewNoteButtons() {
         + Catatan
       </button>
       <button
+        type="button"
         className="btn btn-accent"
         disabled={pending}
         onClick={() => create("mom")}
@@ -106,7 +108,7 @@ export function NotesFilter({
               key={tab.label}
               type="button"
               onClick={() => pushUrl(tab.value, draft)}
-              className={`rounded px-3 py-1.5 text-sm transition-colors ${
+              className={`rounded px-3 py-2 text-sm transition-colors ${
                 active
                   ? "bg-ink font-medium text-ink-inverse"
                   : "text-ink-muted hover:text-ink"

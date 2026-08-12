@@ -158,7 +158,9 @@ export function QuickAdd({
             }
           }}
           placeholder="Tulis tugas…"
-          className="w-full resize-none bg-transparent px-2.5 pt-2.5 pr-6 text-[13px] leading-snug text-ink outline-none placeholder:text-ink-subtle"
+          // 16px di HP supaya Safari iOS tidak memperbesar halaman saat
+          // kotak ini difokus; kembali rapat di layar berkursor.
+          className="w-full resize-none bg-transparent px-2.5 pt-2.5 pr-6 text-base leading-snug text-ink outline-none placeholder:text-ink-subtle sm:text-[13px]"
         />
 
         {showDetail && (
@@ -185,7 +187,7 @@ export function QuickAdd({
                 value={dueDate}
                 onChange={(event) => setDueDate(event.target.value)}
                 aria-label="Tenggat"
-                className="min-w-0 flex-1 rounded border border-black/10 bg-white/70 px-1.5 py-1 font-mono text-[11px] text-ink outline-none"
+                className="min-w-0 flex-1 rounded border border-black/10 bg-white/70 px-1.5 py-1.5 font-mono text-base text-ink outline-none sm:py-1 sm:text-[11px]"
               />
               <DayChip label="Hari ini" days={0} onPick={setDueDate} />
               <DayChip label="Besok" days={1} onPick={setDueDate} />

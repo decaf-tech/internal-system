@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseKey, supabaseUrl } from "@/lib/env";
@@ -28,9 +29,20 @@ export async function createClient() {
   });
 }
 
-// Ambil user yang sedang login beserta profilnya.
-// Mengembalikan null kalau belum login.
-export async function getCurrentUser() {
+/**
+ * Ambil user yang sedang login beserta profilnya. Mengembalikan null
+ * kalau belum login.
+ *
+ * Dibungkus `cache()` React — bukan cache lintas request, melainkan memo
+ * sepanjang SATU render. Tiap pemanggilan berarti dua perjalanan ke
+ * Supabase (verifikasi token + baca baris profil), dan tata letak aplikasi
+ * memanggilnya di setiap halaman: tanpa ini, membuka /profile atau dasbor
+ * berarti empat perjalanan untuk menjawab pertanyaan yang sama dua kali.
+ * Aman karena hasilnya memang tidak berubah di tengah satu render, dan
+ * cache-nya ikut mati begitu request-nya selesai — tidak ada risiko sesi
+ * satu orang terbawa ke request orang lain.
+ */
+export const getCurrentUser = cache(async () => {
   const supabase = await createClient();
 
   // getUser() memverifikasi token ke server Supabase. Jangan pakai
@@ -49,4 +61,4 @@ export async function getCurrentUser() {
     .single();
 
   return { user, profile };
-}
+});

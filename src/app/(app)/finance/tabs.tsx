@@ -21,7 +21,7 @@ export function FinanceTabs({ active }: { active: string }) {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`rounded px-3 py-1.5 text-sm whitespace-nowrap transition-colors ${
+            className={`rounded px-3 py-2 text-sm whitespace-nowrap transition-colors ${
               tab.href === active
                 ? "bg-ink font-medium text-ink-inverse"
                 : "text-ink-muted hover:text-ink"

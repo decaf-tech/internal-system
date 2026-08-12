@@ -3,7 +3,12 @@ import "server-only";
 import { GoogleDriveProvider } from "./google-drive";
 import type { StorageProvider } from "./types";
 
-export type { StorageProvider, StoredFile, UploadInput } from "./types";
+export type {
+  StorageProvider,
+  StorageQuota,
+  StoredFile,
+  UploadInput,
+} from "./types";
 
 let cached: StorageProvider | null = null;
 

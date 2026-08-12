@@ -65,7 +65,7 @@ export default async function ExpensesPage() {
 
       <FinanceTabs active="/finance/expenses" />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <SummaryCard
           label="Menunggu Persetujuan"
           value={formatRupiah(pendingTotal)}
@@ -104,9 +104,9 @@ function SummaryCard({
   hint?: string;
 }) {
   return (
-    <div className="card p-4">
+    <div className="card p-3 sm:p-4">
       <p className="eyebrow">{label}</p>
-      <p className="mt-1.5 font-serif text-xl text-forest">{value}</p>
+      <p className="mt-1.5 font-serif text-lg tabular-nums text-forest sm:text-xl">{value}</p>
       {hint && <p className="mt-0.5 text-xs text-ink-subtle">{hint}</p>}
     </div>
   );

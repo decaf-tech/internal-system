@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
+import { getStorage, type StorageQuota } from "@/lib/storage";
 import type { Folder } from "@/lib/types";
 import { FileBrowser, type BrowserDocument } from "./file-browser";
 
@@ -11,6 +12,15 @@ export default async function DocumentsPage({
   const folderId = typeof raw === "string" && raw.length > 0 ? raw : null;
 
   const supabase = await createClient();
+
+  // Kuota murni informatif — kalau Drive lagi bermasalah, jangan sampai
+  // seluruh halaman ikut gagal cuma karena indikator ini.
+  const quota: StorageQuota | null = await getStorage()
+    .getQuota()
+    .catch((error) => {
+      console.error("Gagal membaca kuota Google Drive:", error);
+      return null;
+    });
 
   const [currentResult, foldersResult, documentsResult] = await Promise.all([
     folderId
@@ -65,6 +75,7 @@ export default async function DocumentsPage({
         breadcrumb={breadcrumb}
         folders={(foldersResult.data ?? []) as Folder[]}
         documents={(documentsResult.data ?? []) as unknown as BrowserDocument[]}
+        quota={quota}
       />
     </>
   );

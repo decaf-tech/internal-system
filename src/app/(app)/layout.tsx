@@ -28,15 +28,41 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p className="font-serif text-xl leading-tight">Decaf</p>
           </div>
 
-          {/* Pintasan profil versi HP: avatar saja, karena namanya sudah
-              muncul di dalam halaman profilnya sendiri. */}
-          <Link
-            href="/profile"
-            aria-label="Profil saya"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-forest-soft font-mono text-xs text-forest lg:hidden"
-          >
-            {initials(name)}
-          </Link>
+          <div className="flex items-center gap-1 lg:hidden">
+            {/* Admin tinggal di sini, bukan di bilah menu bawah — lihat
+                komentar di components/nav.tsx. */}
+            {isSuperAdmin && (
+              <Link
+                href="/admin"
+                aria-label="Admin"
+                className="icon-btn"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 2l4.5 1.6v3.9c0 3-1.9 5.3-4.5 6.5-2.6-1.2-4.5-3.5-4.5-6.5V3.6L8 2z" />
+                  <path d="M5.8 8l1.6 1.6L10.3 6.4" />
+                </svg>
+              </Link>
+            )}
+
+            {/* Pintasan profil versi HP: avatar saja, karena namanya sudah
+                muncul di dalam halaman profilnya sendiri. */}
+            <Link
+              href="/profile"
+              aria-label="Profil saya"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-soft font-mono text-xs text-forest"
+            >
+              {initials(name)}
+            </Link>
+          </div>
         </div>
 
         <div className="hidden px-3 lg:block">
@@ -69,13 +95,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
 
-      {/* pb-20 menyediakan ruang untuk bilah menu bawah, supaya baris
-          terakhir tiap halaman tidak tertutup olehnya. */}
-      <main className="flex-1 px-4 pt-5 pb-20 lg:px-8 lg:py-8">
+      {/* Padding bawah = tinggi bilah menu + area aman iPhone, supaya
+          baris terakhir tiap halaman tidak tertutup olehnya. Padding
+          kiri/kanan ikut area aman juga: dengan `viewportFit: "cover"`
+          (lihat app/layout.tsx) layar berponi dalam posisi mendatar
+          memakan sebagian tepi. */}
+      <main className="flex-1 pt-5 pr-[max(1rem,env(safe-area-inset-right))] pb-[calc(4.5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] lg:px-8 lg:py-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
 
-      <MobileTabBar isSuperAdmin={isSuperAdmin} />
+      <MobileTabBar />
     </div>
   );
 }

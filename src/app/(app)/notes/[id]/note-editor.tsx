@@ -206,7 +206,10 @@ export function NoteEditor({
     : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    // Melebar di layar besar supaya editor & pratinjaunya muat bersisian
+    // (ambangnya ada di markdown-editor.tsx). Di bawah itu tetap 3xl —
+    // lebar baca yang nyaman untuk catatan yang cuma dibaca.
+    <div className="mx-auto max-w-3xl xl:max-w-5xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/notes"
@@ -542,7 +545,7 @@ function LinkChips({
           if (event.target.value) onAdd(event.target.value);
         }}
         disabled={remaining.length === 0}
-        className="field text-sm"
+        className="field"
       >
         <option value="">
           {remaining.length === 0 ? "— Semua sudah dipilih —" : addLabel}

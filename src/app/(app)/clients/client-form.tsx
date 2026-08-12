@@ -127,7 +127,7 @@ export function ClientForm({
       </div>
 
       {state.error && (
-        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}

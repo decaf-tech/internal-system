@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { formatDate, formatFileSize } from "@/lib/format";
+import type { StorageQuota } from "@/lib/storage";
 import type { Document, Folder } from "@/lib/types";
 import { deleteDocument } from "@/lib/actions/documents";
 import { uploadFiles, type UploadProgress } from "@/lib/upload-client";
+import { FilePickButton } from "@/components/file-picker";
+import { ConfirmDialog, PromptDialog } from "@/components/modal";
+import { UploadProgressBar } from "@/components/upload-progress";
 import { createFolder, deleteFolder, renameFolder } from "./actions";
 
 export type BrowserDocument = Document & {
@@ -24,32 +28,32 @@ export function FileBrowser({
   breadcrumb,
   folders,
   documents,
+  quota,
 }: {
   currentFolder: Folder | null;
   breadcrumb: Folder[];
   folders: Folder[];
   documents: BrowserDocument[];
+  quota: StorageQuota | null;
 }) {
   const router = useRouter();
   const folderId = currentFolder?.id ?? null;
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const uploading = progress !== null;
 
-  async function upload(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0 || uploading) return;
+  async function upload(files: File[]) {
+    if (files.length === 0 || uploading) return;
 
     setError(null);
     const { failed } = await uploadFiles(
-      Array.from(fileList),
+      files,
       { kind: "folder", folderId },
       setProgress,
     );
     setProgress(null);
-    if (inputRef.current) inputRef.current.value = "";
 
     setError(
       failed.length > 0
@@ -69,30 +73,28 @@ export function FileBrowser({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Breadcrumb trail={breadcrumb} />
 
-        <div className="flex gap-2">
+        {/* Di HP kedua tombol berbagi lebar layar rata dua; berjejer rapat
+            di sudut kanan berarti keduanya kecil dan bersebelahan. */}
+        <div className="flex w-full gap-2 sm:w-auto">
           <NewFolderButton parentId={folderId} onError={setError} />
-          <button
-            type="button"
-            className="btn btn-accent"
+          <FilePickButton
+            onFiles={upload}
+            multiple
             disabled={uploading}
-            onClick={() => inputRef.current?.click()}
+            sheetTitle="Unggah ke folder ini"
+            className="btn btn-accent flex-1 sm:flex-none"
           >
             {uploading ? "Mengunggah…" : "+ Unggah File"}
-          </button>
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            className="hidden"
-            onChange={(event) => upload(event.target.files)}
-          />
+          </FilePickButton>
         </div>
       </div>
+
+      {quota && <StorageQuotaIndicator quota={quota} />}
 
       {progress && <UploadProgressBar progress={progress} />}
 
       {error && (
-        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </p>
       )}
@@ -107,7 +109,7 @@ export function FileBrowser({
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
-          upload(event.dataTransfer.files);
+          upload(Array.from(event.dataTransfer.files));
         }}
         className={`card transition-colors ${
           dragging ? "border-accent bg-accent-soft/40" : ""
@@ -117,7 +119,9 @@ export function FileBrowser({
           <div className="flex flex-col items-center gap-1.5 px-6 py-16 text-center">
             <p className="font-medium">Folder ini kosong</p>
             <p className="max-w-sm text-sm text-ink-muted">
-              Seret file ke sini untuk mengunggah, atau buat folder baru.
+              Ketuk “Unggah File” untuk mengambil foto, memilih dari galeri,
+              atau menaruh berkas. Di laptop, file juga bisa diseret langsung
+              ke sini.
             </p>
           </div>
         ) : (
@@ -142,31 +146,50 @@ export function FileBrowser({
 }
 
 /**
- * Bilah progres unggahan. Untuk file besar ini yang membedakan "sedang
- * berjalan" dari "aplikasinya hang".
+ * Sisa kuota Google Drive tim. Ini kuota akun secara keseluruhan (Drive
+ * bawaan Google, bukan cuma folder root aplikasi) — Drive API tidak
+ * membedakan keduanya, jadi paling jujur ditampilkan apa adanya.
  */
-export function UploadProgressBar({ progress }: { progress: UploadProgress }) {
+function StorageQuotaIndicator({ quota }: { quota: StorageQuota }) {
+  const { usageBytes, limitBytes } = quota;
+
+  // Akun tanpa batas (mis. Workspace tertentu) tidak punya angka
+  // pembanding — tampilkan cuma jumlah terpakai, tanpa bar.
+  if (limitBytes === null) {
+    return (
+      <p className="text-xs text-ink-subtle">
+        {formatFileSize(usageBytes)} terpakai di Google Drive · kuota tidak
+        terbatas.
+      </p>
+    );
+  }
+
+  const percent = limitBytes > 0 ? Math.min(100, (usageBytes / limitBytes) * 100) : 0;
+  const nearFull = percent >= 90;
+
   return (
     <div className="rounded-md border border-line bg-surface px-3 py-2">
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <p className="min-w-0 truncate text-xs text-ink-muted">
-          {progress.count > 1 && (
-            <span className="font-mono text-ink-subtle">
-              {progress.index}/{progress.count}{" "}
-            </span>
-          )}
-          {progress.name}
-        </p>
+      <div className="mb-1.5 flex items-baseline justify-between gap-3 text-xs">
+        <span className={nearFull ? "font-medium text-danger" : "text-ink-muted"}>
+          {formatFileSize(usageBytes)} dari {formatFileSize(limitBytes)} terpakai
+        </span>
         <span className="font-mono text-[11px] text-ink-subtle">
-          {progress.percent}%
+          {percent.toFixed(1).replace(".", ",")}%
         </span>
       </div>
       <div className="h-1 overflow-hidden rounded-full bg-surface-muted">
         <div
-          className="h-full rounded-full bg-accent transition-[width] duration-200"
-          style={{ width: `${progress.percent}%` }}
+          className={`h-full rounded-full transition-[width] duration-200 ${
+            nearFull ? "bg-danger" : "bg-accent"
+          }`}
+          style={{ width: `${percent}%` }}
         />
       </div>
+      {nearFull && (
+        <p className="mt-1.5 text-[11px] text-danger">
+          Kuota Google Drive hampir habis — file baru bisa gagal diunggah.
+        </p>
+      )}
     </div>
   );
 }
@@ -214,24 +237,33 @@ function NewFolderButton({
   onError: (message: string | null) => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
 
   return (
-    <button
-      type="button"
-      className="btn btn-ghost"
-      disabled={pending}
-      onClick={() => {
-        const name = prompt("Nama folder baru:");
-        if (!name) return;
-        onError(null);
-        startTransition(async () => {
-          const result = await createFolder(parentId, name);
-          onError(result.error);
-        });
-      }}
-    >
-      + Folder
-    </button>
+    <>
+      <button
+        type="button"
+        className="btn btn-ghost flex-1 sm:flex-none"
+        disabled={pending}
+        onClick={() => setOpen(true)}
+      >
+        + Folder
+      </button>
+      <PromptDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Folder Baru"
+        label="Nama folder"
+        confirmLabel="Buat"
+        onSubmit={(name) => {
+          onError(null);
+          startTransition(async () => {
+            const result = await createFolder(parentId, name);
+            onError(result.error);
+          });
+        }}
+      />
+    </>
   );
 }
 
@@ -243,6 +275,8 @@ function FolderRow({
   onError: (message: string | null) => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [renaming, setRenaming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   return (
     <li className="flex items-center gap-3 px-3 py-2.5">
@@ -268,16 +302,9 @@ function FolderRow({
       <button
         type="button"
         disabled={pending}
-        className="rounded p-1.5 text-ink-subtle hover:bg-surface-muted hover:text-ink disabled:opacity-50"
+        className="icon-btn"
         aria-label={`Ganti nama folder ${folder.name}`}
-        onClick={() => {
-          const name = prompt("Nama baru:", folder.name);
-          if (!name || name === folder.name) return;
-          startTransition(async () => {
-            const result = await renameFolder(folder.id, name);
-            onError(result.error);
-          });
-        }}
+        onClick={() => setRenaming(true)}
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
           <path
@@ -292,20 +319,9 @@ function FolderRow({
       <button
         type="button"
         disabled={pending}
-        className="rounded p-1.5 text-ink-subtle hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+        className="icon-btn icon-btn-danger"
         aria-label={`Hapus folder ${folder.name}`}
-        onClick={() => {
-          if (
-            !confirm(
-              `Hapus folder "${folder.name}"? Subfolder ikut terhapus dari daftar, tapi semua file tetap aman di Google Drive.`,
-            )
-          )
-            return;
-          startTransition(async () => {
-            const result = await deleteFolder(folder.id);
-            onError(result.error);
-          });
-        }}
+        onClick={() => setDeleting(true)}
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
           <path
@@ -317,12 +333,41 @@ function FolderRow({
           />
         </svg>
       </button>
+
+      <PromptDialog
+        open={renaming}
+        onClose={() => setRenaming(false)}
+        title="Ganti Nama Folder"
+        label="Nama baru"
+        defaultValue={folder.name}
+        onSubmit={(name) => {
+          if (name === folder.name) return;
+          startTransition(async () => {
+            const result = await renameFolder(folder.id, name);
+            onError(result.error);
+          });
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleting}
+        onClose={() => setDeleting(false)}
+        title="Hapus Folder"
+        message={`Hapus folder "${folder.name}"? Subfolder ikut terhapus dari daftar, tapi semua file tetap aman di Google Drive.`}
+        onConfirm={() => {
+          startTransition(async () => {
+            const result = await deleteFolder(folder.id);
+            onError(result.error);
+          });
+        }}
+      />
     </li>
   );
 }
 
 function DocumentRow({ doc }: { doc: BrowserDocument }) {
   const [pending, startTransition] = useTransition();
+  const [deleting, setDeleting] = useState(false);
 
   return (
     <li className="flex items-center gap-3 px-3 py-2.5">
@@ -359,12 +404,8 @@ function DocumentRow({ doc }: { doc: BrowserDocument }) {
         type="button"
         disabled={pending}
         aria-label={`Hapus ${doc.name}`}
-        className="rounded p-1.5 text-ink-subtle hover:bg-danger-soft hover:text-danger disabled:opacity-50"
-        onClick={() => {
-          if (!confirm("Hapus dokumen ini? File dipindah ke Trash Drive."))
-            return;
-          startTransition(() => deleteDocument(doc.id));
-        }}
+        className="icon-btn icon-btn-danger"
+        onClick={() => setDeleting(true)}
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
           <path
@@ -376,6 +417,14 @@ function DocumentRow({ doc }: { doc: BrowserDocument }) {
           />
         </svg>
       </button>
+
+      <ConfirmDialog
+        open={deleting}
+        onClose={() => setDeleting(false)}
+        title="Hapus Dokumen"
+        message="Hapus dokumen ini? File dipindah ke Trash Drive."
+        onConfirm={() => startTransition(() => deleteDocument(doc.id))}
+      />
     </li>
   );
 }

@@ -192,7 +192,7 @@ export function FilterBar({
               }
               placeholder="Cari judul / klien…"
               aria-label="Cari tugas"
-              className="field w-40 py-1 text-xs"
+              className="field w-40 py-1 text-base sm:text-xs"
             />
             {active > 0 && (
               <button

@@ -12,7 +12,11 @@ export function NewClientButton() {
 
   return (
     <>
-      <button className="btn btn-accent" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="btn btn-accent flex-1 sm:flex-none"
+        onClick={() => setOpen(true)}
+      >
         + Klien Baru
       </button>
       <Modal open={open} onClose={close} title="Klien Baru">

@@ -48,13 +48,18 @@ export function Nav({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
  *
  * Menu yang dulu berbaris di atas layar berarti setiap perpindahan halaman
  * menuntut jempol menjangkau sisi terjauh dari tempatnya beristirahat. Di
- * bawah, kelima tujuannya berada tepat di jangkauan — dan lebar layar
- * dibagi rata jadi lima, jadi tidak ada tombol yang lebih sulit dikenai
- * daripada yang lain.
+ * bawah, keenam tujuannya berada tepat di jangkauan — dan lebar layar
+ * dibagi rata, jadi tidak ada tombol yang lebih sulit dikenai daripada
+ * yang lain.
+ *
+ * Admin sengaja TIDAK ikut di sini meski Abi punya aksesnya: tujuh kolom
+ * di layar 375px berarti 53px per tombol, dan labelnya mulai terpotong.
+ * Halaman itu dibuka sebulan sekali, jadi tempatnya di bilah kepala
+ * (lihat `(app)/layout.tsx`) — bukan mengambil seperenam dari ruang yang
+ * dipakai tiap hari.
  */
-export function MobileTabBar({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
+export function MobileTabBar() {
   const pathname = usePathname();
-  const links = isSuperAdmin ? [...LINKS, ADMIN_LINK] : LINKS;
 
   return (
     <nav
@@ -62,19 +67,26 @@ export function MobileTabBar({ isSuperAdmin = false }: { isSuperAdmin?: boolean 
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <div className="flex">
-        {links.map(({ href, label, icon: Icon }) => {
+        {LINKS.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Link
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition-colors ${
+              // min-h 3.25rem: ikon + label + jarak sudah melewati 44px,
+              // tapi dituliskan supaya tidak diam-diam menyusut kalau
+              // label atau ukuran ikonnya kelak diubah.
+              className={`flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] transition-colors active:bg-surface-muted ${
                 active ? "text-accent" : "text-ink-subtle"
               }`}
             >
-              <Icon />
-              <span>{label}</span>
+              {/* Ikon 20px di sini, 16px di menu samping — dilihat sambil
+                  berjalan, bukan sambil duduk di depan layar. */}
+              <span className="[&>svg]:h-5 [&>svg]:w-5">
+                <Icon />
+              </span>
+              <span className="leading-none">{label}</span>
             </Link>
           );
         })}

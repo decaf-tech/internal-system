@@ -219,7 +219,11 @@ export function NewTaskButton({ options }: { options: TaskFormOptions }) {
 
   return (
     <>
-      <button className="btn btn-accent" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="btn btn-accent flex-1 sm:flex-none"
+        onClick={() => setOpen(true)}
+      >
         + Tugas Baru
       </button>
       <Modal open={open} onClose={close} title="Tugas Baru">
@@ -244,7 +248,7 @@ function ViewTab({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded px-3 py-1.5 text-sm transition-colors ${
+      className={`rounded px-3 py-2 text-sm transition-colors ${
         active
           ? "bg-ink font-medium text-ink-inverse"
           : "text-ink-muted hover:text-ink"

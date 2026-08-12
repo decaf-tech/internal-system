@@ -8,6 +8,7 @@ import type {
   ResumableUpload,
   ResumableUploadInput,
   StorageProvider,
+  StorageQuota,
   StoredFile,
   UploadInput,
 } from "./types";
@@ -225,6 +226,19 @@ export class GoogleDriveProvider implements StorageProvider {
       fileId,
       requestBody: { trashed: true },
     });
+  }
+
+  async getQuota(): Promise<StorageQuota> {
+    const { data } = await this.drive.about.get({
+      fields: "storageQuota(usage, limit)",
+    });
+
+    const quota = data.storageQuota ?? {};
+    return {
+      usageBytes: Number(quota.usage ?? 0),
+      // Field ini absen (bukan 0) kalau akun tidak berbatas kuota.
+      limitBytes: quota.limit ? Number(quota.limit) : null,
+    };
   }
 }
 

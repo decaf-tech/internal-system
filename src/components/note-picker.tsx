@@ -103,7 +103,7 @@ export function NotePicker({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Cari judul atau isi catatan…"
-          className="field mb-2 text-sm"
+          className="field mb-2"
         />
 
         {results === null ? (

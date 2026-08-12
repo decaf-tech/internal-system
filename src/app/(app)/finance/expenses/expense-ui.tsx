@@ -4,14 +4,14 @@ import {
   useActionState,
   useCallback,
   useEffect,
-  useRef,
   useState,
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
 import { Modal, SubmitButton } from "@/components/modal";
 import { ExpenseStatusBadge } from "@/components/badge";
-import { formatDate, formatRupiah } from "@/lib/format";
+import { FilePickButton } from "@/components/file-picker";
+import { formatDate, formatFileSize, formatRupiah } from "@/lib/format";
 import { uploadFiles } from "@/lib/upload-client";
 import {
   EXPENSE_CATEGORY_LABEL,
@@ -31,14 +31,22 @@ export type ExpenseFormOptions = {
   projects: { id: string; name: string; client_id: string }[];
 };
 
-export function NewExpenseButton({ options }: { options: ExpenseFormOptions }) {
+export function NewExpenseButton({
+  options,
+  className = "btn btn-accent flex-1 sm:flex-none",
+  label = "+ Catat Pengeluaran",
+}: {
+  options: ExpenseFormOptions;
+  className?: string;
+  label?: string;
+}) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
 
   return (
     <>
-      <button className="btn btn-accent" onClick={() => setOpen(true)}>
-        + Catat Pengeluaran
+      <button type="button" className={className} onClick={() => setOpen(true)}>
+        {label}
       </button>
       <Modal open={open} onClose={close} title="Pengeluaran Baru">
         {open && <ExpenseForm options={options} onDone={close} />}
@@ -54,52 +62,49 @@ function ExpenseForm({
   options: ExpenseFormOptions;
   onDone: () => void;
 }) {
-  const [state, formAction] = useActionState<FormState, FormData>(
-    createExpense,
-    { error: null },
-  );
-
   // Struk disimpan di state, bukan sebagai field form — kalau ikut terkirim
-  // bersama form, ukurannya dibatasi body request Server Action. Di sini
-  // file-nya diunggah sendiri setelah pengeluarannya tercatat.
-  const receiptRef = useRef<HTMLInputElement>(null);
-  const [receiptError, setReceiptError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  // bersama form, ukurannya dibatasi body request Server Action. File-nya
+  // diunggah sendiri setelah pengeluarannya tercatat.
+  const [receipt, setReceipt] = useState<File | null>(null);
   const [clientId, setClientId] = useState("");
   const [projectId, setProjectId] = useState("");
 
+  /**
+   * Menyimpan lalu mengunggah, dalam satu aksi.
+   *
+   * Dijadikan satu supaya `useFormStatus` tetap "sedang berjalan" selama
+   * struknya naik — sebelumnya unggahan itu berlangsung di sebuah efek
+   * setelah aksinya selesai, jadi tombol Simpan sudah hidup lagi dan
+   * modalnya masih terbuka tanpa penjelasan yang jelas.
+   */
+  const [state, formAction] = useActionState<FormState, FormData>(
+    async (previous, formData) => {
+      // Kalau percobaan sebelumnya sudah mencatat pengeluarannya dan yang
+      // gagal cuma strukya, jangan dicatat dua kali.
+      const saved: FormState = previous.expenseId
+        ? { ok: true, error: null, expenseId: previous.expenseId }
+        : await createExpense(previous, formData);
+
+      if (!saved.ok || !saved.expenseId || !receipt) return saved;
+
+      const { failed } = await uploadFiles([receipt], {
+        kind: "link",
+        link: { expenseId: saved.expenseId },
+      });
+      if (failed.length === 0) return saved;
+
+      // Struk opsional: kalau unggahannya gagal, pengeluarannya tetap
+      // tersimpan dan struk bisa dilampirkan menyusul dari daftar.
+      return {
+        error: `Pengeluarannya sudah tersimpan, tapi struknya gagal diunggah: ${failed[0].reason}. Coba Simpan lagi, atau lampirkan menyusul dari daftar pengeluaran.`,
+        expenseId: saved.expenseId,
+      };
+    },
+    { error: null },
+  );
+
   useEffect(() => {
-    if (!state.ok || !state.expenseId) return;
-
-    const receipt = receiptRef.current?.files?.[0];
-    if (!receipt) {
-      onDone();
-      return;
-    }
-
-    let cancelled = false;
-    setUploading(true);
-
-    // Struk opsional: kalau uploadnya gagal, pengeluarannya tetap tersimpan
-    // dan struk bisa dilampirkan menyusul dari daftar pengeluaran.
-    uploadFiles([receipt], {
-      kind: "link",
-      link: { expenseId: state.expenseId },
-    }).then(({ failed }) => {
-      if (cancelled) return;
-      setUploading(false);
-      if (failed.length > 0) {
-        setReceiptError(
-          `Pengeluaran tersimpan, tapi struk gagal diunggah: ${failed[0].reason}`,
-        );
-        return;
-      }
-      onDone();
-    });
-
-    return () => {
-      cancelled = true;
-    };
+    if (state.ok) onDone();
   }, [state, onDone]);
 
   return (
@@ -226,22 +231,35 @@ function ExpenseForm({
         />
       </div>
 
+      {/* Struk hampir selalu difoto di tempat, jadi jalur tercepatnya
+          adalah kamera — bukan menyusuri folder. Lihat file-picker.tsx. */}
       <div>
-        <label className="label" htmlFor="receipt">
-          Struk (opsional)
-        </label>
-        <input
-          ref={receiptRef}
-          id="receipt"
-          type="file"
-          accept="image/*,application/pdf"
-          className="field py-1.5"
-        />
-        {uploading && (
-          <p className="mt-1 text-xs text-ink-subtle">Mengunggah struk…</p>
-        )}
-        {receiptError && (
-          <p className="mt-1 text-xs text-danger">{receiptError}</p>
+        <span className="label">Struk (opsional)</span>
+        {receipt ? (
+          <div className="flex items-center gap-2 rounded-md border border-line bg-surface-muted px-3 py-2">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm">{receipt.name}</span>
+              <span className="font-mono text-[11px] text-ink-subtle">
+                {formatFileSize(receipt.size)}
+              </span>
+            </span>
+            <button
+              type="button"
+              aria-label="Lepas struk"
+              className="icon-btn icon-btn-danger"
+              onClick={() => setReceipt(null)}
+            >
+              <IconTrash />
+            </button>
+          </div>
+        ) : (
+          <FilePickButton
+            onFiles={(files) => setReceipt(files[0] ?? null)}
+            sheetTitle="Ambil struk dari"
+            className="btn btn-ghost w-full"
+          >
+            + Foto / pilih struk
+          </FilePickButton>
         )}
       </div>
 
@@ -256,7 +274,7 @@ function ExpenseForm({
       </label>
 
       {state.error && (
-        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}
@@ -290,47 +308,53 @@ function ExpenseForm({
  */
 function ReceiptUpload({ expenseId }: { expenseId: string }) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="mt-1">
-      <button
-        type="button"
+      <FilePickButton
         disabled={busy}
-        onClick={() => inputRef.current?.click()}
-        className="text-xs text-ink-subtle hover:text-accent hover:underline disabled:opacity-50"
-      >
-        {busy ? "Mengunggah struk…" : "+ Lampirkan struk"}
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        onChange={async (event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-
+        sheetTitle="Ambil struk dari"
+        className="-ml-1 rounded px-1 py-1.5 text-xs text-ink-subtle hover:text-accent disabled:opacity-50"
+        onFiles={async (files) => {
           setBusy(true);
           setError(null);
-          const { failed } = await uploadFiles([file], {
+          const { failed } = await uploadFiles(files, {
             kind: "link",
             link: { expenseId },
           });
           setBusy(false);
 
-          // Kosongkan supaya file yang sama bisa dipilih lagi kalau gagal.
-          if (inputRef.current) inputRef.current.value = "";
           if (failed.length > 0) {
             setError(failed[0].reason);
             return;
           }
           router.refresh();
         }}
-      />
-      {error && <p className="text-[11px] text-danger">{error}</p>}
+      >
+        {busy ? "Mengunggah struk…" : "+ Lampirkan struk"}
+      </FilePickButton>
+      {error && (
+        <p className="text-[11px] text-danger" role="alert">
+          {error}
+        </p>
+      )}
     </div>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M3 4.5h10M6.5 4V2.5h3V4M4.5 4.5l.5 9h6l.5-9"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -376,7 +400,7 @@ export function ExpenseCard({ expense }: { expense: ExpenseWithRelations }) {
           value={expense.status}
           disabled={pending}
           aria-label={`Ubah status ${expense.title}`}
-          className="field w-auto py-1 text-xs"
+          className="field w-auto py-1 text-base sm:text-xs"
           onChange={(event) =>
             startTransition(() =>
               updateExpenseStatus(
@@ -395,23 +419,15 @@ export function ExpenseCard({ expense }: { expense: ExpenseWithRelations }) {
 
         <button
           type="button"
-          aria-label="Hapus pengeluaran"
+          aria-label={`Hapus pengeluaran ${expense.title}`}
           disabled={pending}
-          className="ml-auto rounded p-1.5 text-ink-subtle hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+          className="icon-btn icon-btn-danger ml-auto"
           onClick={() => {
             if (!confirm(`Hapus catatan "${expense.title}"?`)) return;
             startTransition(() => deleteExpense(expense.id));
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M3 4.5h10M6.5 4V2.5h3V4M4.5 4.5l.5 9h6l.5-9"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <IconTrash />
         </button>
       </div>
     </li>

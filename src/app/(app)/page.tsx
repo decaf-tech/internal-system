@@ -93,7 +93,10 @@ export default async function DashboardPage() {
         description="Ringkasan apa yang sedang berjalan hari ini."
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* Dua kolom sejak layar tersempit. Lima kartu bertumpuk satu-satu
+          berarti daftar "Perlu Perhatian" — alasan halaman ini dibuka —
+          baru muncul setelah lima layar penuh gulir di HP. */}
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <Stat
           label="Tugas Aktif"
           value={String(openTasks.length)}
@@ -134,14 +137,14 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
         <Link href="/tasks" className="btn btn-ghost">
-          Buka Papan Tugas →
+          Papan Tugas →
         </Link>
         <Link href="/clients" className="btn btn-ghost">
           Lihat Klien →
         </Link>
-        <Link href="/finance" className="btn btn-ghost">
+        <Link href="/finance" className="btn btn-ghost col-span-2 sm:col-span-1">
           Cashflow →
         </Link>
       </div>
@@ -159,9 +162,11 @@ function Stat({
   hint: string;
 }) {
   return (
-    <div className="card p-4">
+    <div className="card p-3 sm:p-4">
       <p className="eyebrow">{label}</p>
-      <p className="mt-1.5 font-serif text-2xl text-forest">{value}</p>
+      <p className="mt-1.5 font-serif text-xl tabular-nums text-forest sm:text-2xl">
+        {value}
+      </p>
       <p className="mt-0.5 text-xs text-ink-subtle">{hint}</p>
     </div>
   );

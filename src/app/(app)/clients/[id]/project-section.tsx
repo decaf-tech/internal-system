@@ -109,7 +109,7 @@ function ProjectRow({
             type="button"
             aria-label="Hapus project"
             disabled={pending}
-            className="rounded p-1.5 text-ink-subtle hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+            className="icon-btn icon-btn-danger"
             onClick={() => {
               if (!confirm(`Hapus project "${project.name}"?`)) return;
               startTransition(() => deleteProject(project.id, clientId));
@@ -134,7 +134,7 @@ function ProjectRow({
         value={project.status}
         disabled={pending}
         aria-label={`Ubah status project ${project.name}`}
-        className="field mt-2 max-w-48 py-1 text-xs"
+        className="field mt-2 max-w-48 py-1 text-base sm:text-xs"
         onChange={(event) =>
           startTransition(() =>
             updateProjectStatus(
@@ -219,7 +219,7 @@ function DealRow({
               if (event.key === "Escape") setEditing(false);
             }}
             placeholder="10.000.000"
-            className="field w-40 py-1 text-xs"
+            className="field w-40 py-1 text-base sm:text-xs"
           />
           <button
             type="button"
@@ -406,7 +406,7 @@ function ProjectForm({
       </div>
 
       {state.error && (
-        <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}

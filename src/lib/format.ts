@@ -76,7 +76,7 @@ export function formatRelativeDue(value: string | null | undefined) {
 /** "1,4 MB" */
 export function formatFileSize(bytes: number | null | undefined) {
   if (!bytes) return "—";
-  const units = ["B", "KB", "MB", "GB"];
+  const units = ["B", "KB", "MB", "GB", "TB"];
   let size = bytes;
   let unit = 0;
   while (size >= 1024 && unit < units.length - 1) {
