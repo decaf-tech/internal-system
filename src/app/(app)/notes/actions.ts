@@ -485,6 +485,32 @@ export async function notesForOccurrence(
 }
 
 /**
+ * Isi satu catatan — diambil saat pratinjaunya dibuka dari daftar.
+ *
+ * Alasannya sama dengan `searchNotes` di bawah, cuma dari arah sebaliknya:
+ * daftar catatan sengaja tidak membawa `content` ke browser (lihat
+ * `notes/page.tsx`), jadi isinya baru diminta saat ada yang benar-benar
+ * membuka pratinjau — satu catatan, bukan seluruh arsip.
+ *
+ * `null` berarti gagal mengambil, dan itu beda dari `""` yang berarti
+ * catatannya memang masih kosong.
+ */
+export async function noteContent(noteId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("notes")
+    .select("content")
+    .eq("id", noteId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Gagal mengambil isi catatan:", error);
+    return null;
+  }
+  return data?.content ?? "";
+}
+
+/**
  * Catatan yang bisa dipilih untuk dikaitkan, tanpa membawa isinya.
  *
  * Isi catatan bisa beberapa ratus KB untuk notulen panjang, dan yang

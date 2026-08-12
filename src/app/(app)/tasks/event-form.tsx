@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/format";
 import { NOTE_KIND_LABEL, type Document, type NoteSummary } from "@/lib/types";
 import { NotePicker } from "@/components/note-picker";
 import { DocumentPanel } from "@/components/document-panel";
+import { ConfirmButton } from "@/components/modal";
 import { documentsForEvent } from "@/lib/actions/documents";
 import {
   CARD_COLOR_ORDER,
@@ -328,15 +329,6 @@ export function EventForm({
 
   function remove() {
     if (!series) return;
-    const label =
-      effectiveScope === "series"
-        ? `Hapus seluruh seri rapat "${series.title}"? Semua kemunculannya ikut hilang.`
-        : `Batalkan rapat "${occurrence?.title}" tanggal ${format(
-            parseKey(occurrence!.occurrenceDate),
-            "d MMMM",
-            { locale: localeId },
-          )} saja?`;
-    if (!confirm(label)) return;
 
     startTransition(async () => {
       if (effectiveScope === "series") {
@@ -662,14 +654,30 @@ export function EventForm({
 
       <div className="flex items-center justify-between gap-2 pt-1">
         {series ? (
-          <button
-            type="button"
+          <ConfirmButton
             disabled={pending}
-            onClick={remove}
             className="text-sm text-danger hover:underline disabled:opacity-50"
+            title={
+              effectiveScope === "series"
+                ? `Hapus seluruh seri rapat "${series.title}"?`
+                : `Batalkan rapat "${occurrence?.title}"?`
+            }
+            message={
+              effectiveScope === "series"
+                ? "Semua kemunculannya ikut hilang, termasuk yang sudah lewat."
+                : `Hanya kemunculan ${format(
+                    parseKey(occurrence!.occurrenceDate),
+                    "d MMMM",
+                    { locale: localeId },
+                  )} yang dibatalkan — sisa serinya tetap berjalan.`
+            }
+            confirmLabel={
+              effectiveScope === "series" ? "Hapus seri" : "Batalkan rapat"
+            }
+            onConfirm={remove}
           >
             {effectiveScope === "series" ? "Hapus seluruh seri" : "Batalkan rapat ini"}
-          </button>
+          </ConfirmButton>
         ) : (
           <span />
         )}

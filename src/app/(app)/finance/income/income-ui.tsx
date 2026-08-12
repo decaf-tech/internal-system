@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
-import { Modal, SubmitButton } from "@/components/modal";
+import { ConfirmButton, Modal, SubmitButton } from "@/components/modal";
 import { IncomeStatusBadge } from "@/components/badge";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { todayKey } from "@/lib/date-range";
@@ -346,15 +346,13 @@ export function IncomeCard({
           >
             Ubah
           </button>
-          <button
-            type="button"
-            aria-label={`Hapus pemasukan ${income.title}`}
+          <ConfirmButton
+            label={`Hapus pemasukan ${income.title}`}
             disabled={pending}
             className="icon-btn icon-btn-danger"
-            onClick={() => {
-              if (!confirm(`Hapus catatan "${income.title}"?`)) return;
-              startTransition(() => deleteIncome(income.id));
-            }}
+            title={`Hapus catatan "${income.title}"?`}
+            message="Ringkasan cashflow ikut berubah setelah ini."
+            onConfirm={() => startTransition(() => deleteIncome(income.id))}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path
@@ -365,7 +363,7 @@ export function IncomeCard({
                 strokeLinejoin="round"
               />
             </svg>
-          </button>
+          </ConfirmButton>
         </div>
       </div>
 

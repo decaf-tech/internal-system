@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
-import { Modal, SubmitButton } from "@/components/modal";
+import { ConfirmButton, Modal, SubmitButton } from "@/components/modal";
 import { ProjectStatusBadge } from "@/components/badge";
 import { DocumentPanel } from "@/components/document-panel";
 import { formatDate, formatRupiah } from "@/lib/format";
@@ -105,15 +105,15 @@ function ProjectRow({
 
         <div className="flex shrink-0 items-center gap-2">
           <ProjectStatusBadge status={project.status} />
-          <button
-            type="button"
-            aria-label="Hapus project"
+          <ConfirmButton
+            label="Hapus project"
             disabled={pending}
             className="icon-btn icon-btn-danger"
-            onClick={() => {
-              if (!confirm(`Hapus project "${project.name}"?`)) return;
-              startTransition(() => deleteProject(project.id, clientId));
-            }}
+            title={`Hapus project "${project.name}"?`}
+            message="Tugas dan pemasukan yang menempel padanya ikut terlepas."
+            onConfirm={() =>
+              startTransition(() => deleteProject(project.id, clientId))
+            }
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path
@@ -124,7 +124,7 @@ function ProjectRow({
                 strokeLinejoin="round"
               />
             </svg>
-          </button>
+          </ConfirmButton>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { ConfirmButton } from "@/components/modal";
 import { deleteClientRecord } from "../actions";
 
 export function DeleteClientButton({
@@ -13,23 +14,16 @@ export function DeleteClientButton({
   const [pending, startTransition] = useTransition();
 
   return (
-    <button
-      type="button"
+    <ConfirmButton
       disabled={pending}
       className="btn btn-ghost text-danger"
-      onClick={() => {
-        // Project & tugas terkait ikut terhapus (ON DELETE CASCADE),
-        // jadi konfirmasinya perlu menyebut itu secara eksplisit.
-        if (
-          !confirm(
-            `Hapus klien "${clientName}"? Semua project miliknya ikut terhapus. Dokumen di Google Drive tetap tersimpan.`,
-          )
-        )
-          return;
-        startTransition(() => deleteClientRecord(clientId));
-      }}
+      title={`Hapus klien "${clientName}"?`}
+      // Project & tugas terkait ikut terhapus (ON DELETE CASCADE), jadi
+      // konfirmasinya perlu menyebut itu secara eksplisit.
+      message="Semua project miliknya ikut terhapus. Dokumen di Google Drive tetap tersimpan."
+      onConfirm={() => startTransition(() => deleteClientRecord(clientId))}
     >
       {pending ? "Menghapus…" : "Hapus"}
-    </button>
+    </ConfirmButton>
   );
 }

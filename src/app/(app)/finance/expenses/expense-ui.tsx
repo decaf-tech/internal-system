@@ -8,7 +8,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Modal, SubmitButton } from "@/components/modal";
+import { ConfirmButton, Modal, SubmitButton } from "@/components/modal";
 import { ExpenseStatusBadge } from "@/components/badge";
 import { FilePickButton } from "@/components/file-picker";
 import { formatDate, formatFileSize, formatRupiah } from "@/lib/format";
@@ -378,11 +378,9 @@ export function ExpenseCard({ expense }: { expense: ExpenseWithRelations }) {
           {expense.documents.length > 0 ? (
             <a
               href={`/api/documents/${expense.documents[0].id}/download`}
-              target="_blank"
-              rel="noreferrer"
               className="mt-1 inline-block text-xs text-accent hover:underline"
             >
-              Lihat struk
+              Unduh struk
             </a>
           ) : (
             <ReceiptUpload expenseId={expense.id} />
@@ -417,18 +415,16 @@ export function ExpenseCard({ expense }: { expense: ExpenseWithRelations }) {
           ))}
         </select>
 
-        <button
-          type="button"
-          aria-label={`Hapus pengeluaran ${expense.title}`}
+        <ConfirmButton
+          label={`Hapus pengeluaran ${expense.title}`}
           disabled={pending}
           className="icon-btn icon-btn-danger ml-auto"
-          onClick={() => {
-            if (!confirm(`Hapus catatan "${expense.title}"?`)) return;
-            startTransition(() => deleteExpense(expense.id));
-          }}
+          title={`Hapus catatan "${expense.title}"?`}
+          message="Struk yang sudah diunggah tetap tersimpan di Google Drive."
+          onConfirm={() => startTransition(() => deleteExpense(expense.id))}
         >
           <IconTrash />
-        </button>
+        </ConfirmButton>
       </div>
     </li>
   );

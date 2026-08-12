@@ -119,6 +119,68 @@ export function ConfirmDialog({
 }
 
 /**
+ * Tombol yang meminta konfirmasi lewat `ConfirmDialog` sebelum menjalankan
+ * aksinya.
+ *
+ * Ada tujuh tempat penghapusan di aplikasi ini (klien, project, tugas,
+ * rapat, catatan, pengeluaran, pemasukan) dan bentuk tombolnya
+ * berbeda-beda — ada yang ikon, ada yang tautan teks, ada yang tombol
+ * penuh. Yang sama cuma alurnya: tanya dulu, baru jalan. Membungkus alur
+ * itu di sini berarti ketujuhnya tidak masing-masing menumbuhkan state
+ * dialognya sendiri, sementara tampilannya tetap bebas lewat `className`
+ * dan `children`.
+ *
+ * Dialognya dirender bersebelahan dengan tombolnya, jadi kalau tombol ini
+ * berada di dalam modal lain (mis. Hapus tugas di modal Edit Tugas),
+ * `<dialog>` yang kedua tetap naik ke atas yang pertama — perilaku bawaan
+ * top layer, bukan sesuatu yang perlu diatur di sini.
+ */
+export function ConfirmButton({
+  onConfirm,
+  title,
+  message,
+  confirmLabel,
+  className = "btn btn-ghost text-danger",
+  disabled = false,
+  label,
+  children,
+}: {
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  className?: string;
+  disabled?: boolean;
+  /** `aria-label`, untuk tombol yang isinya cuma ikon. */
+  label?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={label}
+        className={className}
+        onClick={() => setOpen(true)}
+      >
+        {children}
+      </button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onConfirm={onConfirm}
+        title={title}
+        message={message}
+        confirmLabel={confirmLabel}
+      />
+    </>
+  );
+}
+
+/**
  * Pengganti ringan untuk `prompt()` bawaan browser — satu kolom teks
  * dengan tombol Simpan/Batal.
  */

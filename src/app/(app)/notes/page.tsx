@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyState, PageHeader } from "@/components/page-header";
-import { MemberAvatar, MemberAvatarStack } from "@/components/member-avatar";
-import { formatDate } from "@/lib/format";
 import { markdownSnippet } from "@/lib/markdown";
-import { NOTE_KIND_LABEL, type NoteKind, type NoteWithRelations } from "@/lib/types";
+import type { NoteKind } from "@/lib/types";
+import { NoteCard, type NoteCardData } from "./note-card";
 import { NewNoteButtons, NotesFilter } from "./notes-toolbar";
 import { NOTE_SELECT, flattenNote, type NoteRow } from "./query";
 
@@ -38,7 +36,17 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
   }
 
   const { data } = await request;
-  const notes = ((data ?? []) as unknown as NoteRow[]).map(flattenNote);
+  // Isi catatan ditinggal di server: kartunya cuma butuh 160 karakter
+  // pertama, sementara `content` sebuah notulen panjang bisa puluhan KB —
+  // dan kartunya kini komponen klien, jadi apa pun yang ikut lewat sini
+  // benar-benar dikirim ke HP. Yang butuh isi lengkap (pratinjau) memintanya
+  // sendiri lewat `noteContent()`, satu catatan saja, saat dibuka.
+  const notes: NoteCardData[] = ((data ?? []) as unknown as NoteRow[])
+    .map(flattenNote)
+    .map(({ content, ...note }) => ({
+      ...note,
+      snippet: markdownSnippet(content),
+    }));
 
   return (
     <>
@@ -68,75 +76,5 @@ export default async function NotesPage({ searchParams }: PageProps<"/notes">) {
         </ul>
       )}
     </>
-  );
-}
-
-function NoteCard({ note }: { note: NoteWithRelations }) {
-  const snippet = markdownSnippet(note.content);
-  const isMom = note.kind === "mom";
-
-  return (
-    <li>
-      <Link
-        href={`/notes/${note.id}`}
-        className="card flex h-full flex-col gap-2 p-4 transition-colors hover:border-line-strong hover:bg-surface-muted/50"
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className={`badge ${
-              isMom
-                ? "bg-forest-soft text-forest"
-                : "bg-surface-sunken text-ink-muted"
-            }`}
-          >
-            {NOTE_KIND_LABEL[note.kind]}
-          </span>
-          {isMom && note.meeting_date && (
-            <span className="font-mono text-[11px] text-ink-subtle">
-              {formatDate(note.meeting_date)}
-            </span>
-          )}
-        </div>
-
-        <h2 className="line-clamp-2 text-base leading-snug">
-          {note.title || "Tanpa judul"}
-        </h2>
-
-        {snippet && (
-          <p className="line-clamp-3 text-sm text-ink-muted">{snippet}</p>
-        )}
-
-        {(note.tasks.length > 0 ||
-          note.events.length > 0 ||
-          note.client ||
-          note.project) && (
-          <p className="truncate font-mono text-[11px] text-ink-subtle">
-            {[
-              note.client?.name,
-              note.project?.name,
-              // Satu catatan bisa menempel ke beberapa tugas sekaligus;
-              // di kartu sesempit ini yang muat cuma yang pertama.
-              note.tasks.length > 1
-                ? `${note.tasks[0].title} +${note.tasks.length - 1}`
-                : note.tasks[0]?.title,
-              note.events[0]?.event?.title,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        )}
-
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2.5">
-          <span className="truncate text-xs text-ink-subtle">
-            Diubah {formatDate(note.updated_at)}
-          </span>
-          {note.participants.length > 0 ? (
-            <MemberAvatarStack members={note.participants} size="xs" />
-          ) : (
-            <MemberAvatar member={note.editor ?? note.author} size="xs" />
-          )}
-        </div>
-      </Link>
-    </li>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { MarkdownEditor } from "@/components/markdown-editor";
+import { ConfirmButton } from "@/components/modal";
 import { MemberAvatar } from "@/components/member-avatar";
 import { formatDate } from "@/lib/format";
 import { DocumentPanel } from "@/components/document-panel";
@@ -606,19 +607,18 @@ function DeleteNoteButton({
   const [pending, startTransition] = useTransition();
 
   return (
-    <button
-      type="button"
+    <ConfirmButton
       disabled={pending}
       className="text-sm text-danger hover:underline disabled:opacity-50"
-      onClick={() => {
-        if (!confirm(`Hapus "${title || "catatan ini"}"? Tidak bisa dibatalkan.`))
-          return;
+      title={`Hapus "${title || "catatan ini"}"?`}
+      message="Tidak bisa dibatalkan. Lampirannya tetap ada di Google Drive."
+      onConfirm={() =>
         startTransition(() => {
           void deleteNote(noteId);
-        });
-      }}
+        })
+      }
     >
       {pending ? "Menghapus…" : "Hapus catatan ini"}
-    </button>
+    </ConfirmButton>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, useTransition } from "react";
-import { Modal } from "@/components/modal";
+import { ConfirmButton, Modal } from "@/components/modal";
 import type {
   BoardColumn,
   EventOccurrence,
@@ -271,19 +271,19 @@ function DeleteTaskButton({
   const [pending, startTransition] = useTransition();
 
   return (
-    <button
-      type="button"
+    <ConfirmButton
       disabled={pending}
       className="text-sm text-danger hover:underline disabled:opacity-50"
-      onClick={() => {
-        if (!confirm(`Hapus tugas "${title}"?`)) return;
+      title={`Hapus tugas "${title}"?`}
+      message="Catatan dan lampiran yang tertaut ikut terlepas — filenya sendiri tetap ada di Google Drive."
+      onConfirm={() =>
         startTransition(async () => {
           await deleteTask(taskId);
           onDeleted();
-        });
-      }}
+        })
+      }
     >
       {pending ? "Menghapus…" : "Hapus tugas ini"}
-    </button>
+    </ConfirmButton>
   );
 }

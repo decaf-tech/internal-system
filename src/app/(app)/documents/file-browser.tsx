@@ -387,8 +387,6 @@ function DocumentRow({ doc }: { doc: BrowserDocument }) {
       <div className="min-w-0 flex-1">
         <a
           href={`/api/documents/${doc.id}/download`}
-          target="_blank"
-          rel="noreferrer"
           className="block truncate text-sm hover:text-accent hover:underline"
         >
           {doc.name}

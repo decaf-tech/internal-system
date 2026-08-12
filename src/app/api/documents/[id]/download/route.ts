@@ -39,9 +39,7 @@ export async function GET(
     return new Response(file.stream as unknown as ReadableStream, {
       headers: {
         "Content-Type": doc.mime_type ?? file.mimeType,
-        // `inline` supaya PDF & gambar bisa dipratinjau langsung di browser,
-        // bukan langsung terunduh.
-        "Content-Disposition": `inline; filename="${encodeURIComponent(doc.name)}"`,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(doc.name)}"`,
         "Cache-Control": "private, no-store",
       },
     });
