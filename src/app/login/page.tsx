@@ -4,6 +4,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const rawNext = params.next;
   const next = typeof rawNext === "string" ? rawNext : "/";
+  const linkFailed = params.error === "tautan-tidak-berlaku";
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
@@ -15,6 +16,16 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             Manajemen tim, klien, dan operasional — dalam satu tempat.
           </p>
         </div>
+
+        {linkFailed && (
+          <p
+            role="alert"
+            className="mb-4 rounded-md bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            Tautan dari email sudah kedaluwarsa atau pernah dipakai. Minta
+            tautan baru ke Abi.
+          </p>
+        )}
 
         <div className="card p-6">
           <LoginForm next={next} />

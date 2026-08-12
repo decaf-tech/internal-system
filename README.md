@@ -53,6 +53,37 @@ halaman **Profil** di dalam sistem (klik namanya di pojok kiri bawah).
 > semua data, serta saling menugaskan. Peran (`founder`/`coo`/`admin`) hanya
 > label untuk memperjelas siapa mengerjakan apa — bukan pembatas akses.
 
+#### Tautan email (reset password & magic link)
+
+Dua setelan di dashboard yang **tidak bisa diatur dari kode** — kalau
+terlewat, tautan di email mendarat di `localhost` walaupun aplikasinya
+sudah live:
+
+1. **Authentication → URL Configuration**
+   - **Site URL**: `https://internal-system-ruddy.vercel.app`
+     (bukan `http://localhost:3000` — nilai inilah yang dipakai tombol
+     _Send password recovery_ dan _Send magic link_ di dashboard).
+   - **Redirect URLs**, tambahkan dua baris:
+     - `https://internal-system-ruddy.vercel.app/**`
+     - `http://localhost:3000/**` — supaya alur yang sama tetap bisa
+       diuji di lokal.
+
+2. **Authentication → Emails → Templates**. Template bawaan memakai
+   `{{ .ConfirmationURL }}`, yang mengembalikan token lewat _fragment_
+   URL (`#access_token=…`) — bagian itu tidak pernah sampai ke server,
+   jadi sistem ini tidak bisa membacanya. Ganti tautan di template jadi:
+
+   - **Reset Password**:
+     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`
+   - **Magic Link**:
+     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink`
+   - **Invite User**:
+     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/reset-password`
+
+   Sisi aplikasinya ada di [`src/app/auth/confirm/route.ts`](src/app/auth/confirm/route.ts):
+   token ditukar jadi sesi, lalu user diantar ke `/reset-password` untuk
+   membuat password baru. Tautan berlaku 1 jam dan sekali pakai.
+
 ### 2. Google Drive
 
 Semua file dimiliki satu akun Google khusus tim (sebut saja **akun Drive tim**).
