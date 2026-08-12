@@ -10,6 +10,10 @@ import { deleteDocument } from "@/lib/actions/documents";
 import { uploadFiles, type UploadProgress } from "@/lib/upload-client";
 import { FilePickButton } from "@/components/file-picker";
 import { ConfirmDialog, PromptDialog } from "@/components/modal";
+import {
+  DocumentPreviewModal,
+  DownloadDocumentButton,
+} from "@/components/document-preview";
 import { UploadProgressBar } from "@/components/upload-progress";
 import { createFolder, deleteFolder, renameFolder } from "./actions";
 
@@ -368,6 +372,7 @@ function FolderRow({
 function DocumentRow({ doc }: { doc: BrowserDocument }) {
   const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
 
   return (
     <li className="flex items-center gap-3 px-3 py-2.5">
@@ -385,18 +390,21 @@ function DocumentRow({ doc }: { doc: BrowserDocument }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <a
-          href={`/api/documents/${doc.id}/download`}
-          className="block truncate text-sm hover:text-accent hover:underline"
+        <button
+          type="button"
+          onClick={() => setPreviewing(true)}
+          className="block truncate text-left text-sm hover:text-accent hover:underline"
         >
           {doc.name}
-        </a>
+        </button>
         <p className="font-mono text-[11px] text-ink-subtle">
           {formatFileSize(doc.size_bytes)} · {formatDate(doc.created_at)}
           {doc.uploader && ` · ${doc.uploader.full_name}`}
           {doc.client && ` · ${doc.client.name}`}
         </p>
       </div>
+
+      <DownloadDocumentButton documentId={doc.id} documentName={doc.name} />
 
       <button
         type="button"
@@ -422,6 +430,11 @@ function DocumentRow({ doc }: { doc: BrowserDocument }) {
         title="Hapus Dokumen"
         message="Hapus dokumen ini? File dipindah ke Trash Drive."
         onConfirm={() => startTransition(() => deleteDocument(doc.id))}
+      />
+
+      <DocumentPreviewModal
+        doc={previewing ? doc : null}
+        onClose={() => setPreviewing(false)}
       />
     </li>
   );

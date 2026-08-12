@@ -9,10 +9,11 @@ import { getStorage } from "@/lib/storage";
  * tim yang sudah login bisa mengunduhnya.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: RouteContext<"/api/documents/[id]/download">,
 ) {
   const { id } = await params;
+  const inline = new URL(request.url).searchParams.get("disposition") === "inline";
 
   const supabase = await createClient();
   const {
@@ -39,7 +40,7 @@ export async function GET(
     return new Response(file.stream as unknown as ReadableStream, {
       headers: {
         "Content-Type": doc.mime_type ?? file.mimeType,
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(doc.name)}"`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${encodeURIComponent(doc.name)}"`,
         "Cache-Control": "private, no-store",
       },
     });

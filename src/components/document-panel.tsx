@@ -9,6 +9,10 @@ import type { DocumentLink } from "@/lib/documents/types";
 import { uploadFiles, type UploadProgress } from "@/lib/upload-client";
 import { FilePickButton } from "@/components/file-picker";
 import { ConfirmDialog } from "@/components/modal";
+import {
+  DocumentPreviewModal,
+  DownloadDocumentButton,
+} from "@/components/document-preview";
 import { UploadProgressBar } from "@/components/upload-progress";
 
 /**
@@ -47,6 +51,7 @@ export function DocumentPanel({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const [previewing, setPreviewing] = useState<Document | null>(null);
 
   const pending = progress !== null;
 
@@ -120,21 +125,25 @@ export function DocumentPanel({
           {documents.map((doc) => (
             <li key={doc.id} className="flex items-center gap-3 py-2.5">
               <div className="min-w-0 flex-1">
-                <a
-                  href={`/api/documents/${doc.id}/download`}
-                  className="block truncate text-sm hover:text-accent hover:underline"
+                <button
+                  type="button"
+                  onClick={() => setPreviewing(doc)}
+                  className="block truncate text-left text-sm hover:text-accent hover:underline"
                 >
                   {doc.name}
-                </a>
+                </button>
                 <p className="font-mono text-xs text-ink-subtle">
                   {formatFileSize(doc.size_bytes)} · {formatDate(doc.created_at)}
                 </p>
               </div>
+              <DownloadDocumentButton documentId={doc.id} documentName={doc.name} />
               <DeleteDocumentButton documentId={doc.id} onDeleted={onChanged} />
             </li>
           ))}
         </ul>
       )}
+
+      <DocumentPreviewModal doc={previewing} onClose={() => setPreviewing(null)} />
     </section>
   );
 }

@@ -45,16 +45,61 @@ export function parseRupiah(input: FormDataEntryValue | null | undefined) {
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
-/** "12 Agu 2026" */
-export function formatDate(value: string | Date | null | undefined) {
-  if (!value) return "—";
-  return format(new Date(value), "d MMM yyyy", { locale: localeId });
+/**
+ * Tanggal dan jam selalu ditampilkan dalam WIB, bukan zona waktu mesin
+ * yang menggambarnya.
+ *
+ * Tanpa ini, `format()` dari date-fns memakai zona waktu lokal runtime:
+ * di Vercel itu UTC, jadi log aktivitas tampil tujuh jam lebih awal dari
+ * jam Jakarta. Di browser anggota tim yang sedang di luar negeri,
+ * melesetnya ke arah lain. Tim ini bekerja dengan satu jam dinding —
+ * jadi jam dinding itu yang dipakai, di mana pun kodenya berjalan.
+ *
+ * Caranya: ambil komponen waktu Jakarta lewat Intl, lalu susun ulang jadi
+ * Date yang komponen *lokalnya* sama persis. date-fns kemudian memformat
+ * angka yang sudah benar, dan pola serta locale Indonesianya tetap utuh.
+ */
+const jakartaParts = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Jakarta",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+function toJakarta(value: string | Date) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return date;
+
+  const part: Record<string, number> = {};
+  for (const { type, value: raw } of jakartaParts.formatToParts(date)) {
+    if (type !== "literal") part[type] = Number(raw);
+  }
+
+  return new Date(
+    part.year,
+    part.month - 1,
+    part.day,
+    // Tengah malam Jakarta dilaporkan Intl sebagai jam 24, bukan 0.
+    part.hour % 24,
+    part.minute,
+    part.second,
+  );
 }
 
-/** "12 Agustus 2026, 14:30" */
+/** "12 Agu 2026" — dalam WIB. */
+export function formatDate(value: string | Date | null | undefined) {
+  if (!value) return "—";
+  return format(toJakarta(value), "d MMM yyyy", { locale: localeId });
+}
+
+/** "12 Agustus 2026, 14:30" — dalam WIB. */
 export function formatDateTime(value: string | Date | null | undefined) {
   if (!value) return "—";
-  return format(new Date(value), "d MMMM yyyy, HH:mm", { locale: localeId });
+  return format(toJakarta(value), "d MMMM yyyy, HH:mm", { locale: localeId });
 }
 
 /** "3 hari lagi" / "2 hari lalu" — untuk deadline di kartu task. */

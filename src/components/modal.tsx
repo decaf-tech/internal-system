@@ -11,11 +11,17 @@ export function Modal({
   open,
   onClose,
   title,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  /**
+   * Melebarkan dialog di layar besar. Untuk isi yang perlu ruang baca —
+   * pratinjau dokumen — bukan untuk form, yang justru lebih enak sempit.
+   */
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -47,7 +53,11 @@ export function Modal({
       // Satuan dvh, bukan vh: di Safari iOS, `vh` dihitung dari layar
       // tanpa bilah alamat, jadi 92vh tetap 92vh saat papan ketik naik —
       // dan tombol Simpan di kaki form berakhir di balik papan ketik.
-      className="m-auto mb-0 max-h-[92dvh] w-full rounded-t-xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/40 sm:mb-auto sm:w-[min(32rem,calc(100vw-2rem))] sm:rounded-lg"
+      className={`m-auto mb-0 max-h-[92dvh] w-full rounded-t-xl border border-line bg-surface p-0 text-ink backdrop:bg-ink/40 sm:mb-auto sm:rounded-lg ${
+        wide
+          ? "sm:w-[min(56rem,calc(100vw-3rem))]"
+          : "sm:w-[min(32rem,calc(100vw-2rem))]"
+      }`}
     >
       <div className="flex items-center justify-between gap-3 border-b border-line py-2.5 pr-2 pl-5 sm:py-3.5 sm:pr-3">
         <h2 className="min-w-0 truncate text-lg">{title}</h2>
