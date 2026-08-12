@@ -113,6 +113,28 @@
     border-radius: 0.5rem;
   }
 
+  /* Balok abu-abu penanda "datanya masih di jalan", dipakai komponen di
+     components/skeleton.tsx. Denyutnya sengaja pelan dan tipis: ini
+     penanda bahwa aplikasi masih hidup, bukan elemen yang minta
+     diperhatikan — dan yang sebentar lagi ditimpa isi sungguhan.
+     Aturan prefers-reduced-motion di @layer base sudah otomatis
+     mematikan denyutnya untuk yang menyalakan setelan itu. */
+  .skeleton {
+    background-color: var(--color-surface-sunken);
+    border-radius: 0.25rem;
+    animation: skeleton-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+
   /* Field form: satu kelas dipakai input, select, dan textarea supaya
      tinggi & fokus ring-nya konsisten di seluruh sistem.
 

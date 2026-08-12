@@ -15,45 +15,47 @@ export default async function ClientDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (!data) notFound();
-  const client = data as Client;
-
+  // Baris klien dulu ditunggu sendirian sebelum empat query di bawahnya
+  // berangkat — satu perjalanan bolak-balik penuh ke Supabase yang
+  // menahan sisanya, padahal keempatnya cuma butuh `id` yang sudah ada di
+  // alamat halaman sejak awal. Sekarang kelimanya berangkat bersamaan;
+  // kalau kliennya ternyata tidak ada, hasil keempat query lain memang
+  // terbuang, tapi itu terjadi hanya saat alamatnya salah.
   const [
+    { data },
     { data: projects },
     { data: tasks },
     { data: documents },
     { data: incomes },
   ] = await Promise.all([
-      supabase
-        .from("projects")
-        .select("*")
-        .eq("client_id", id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("tasks")
-        .select("*")
-        .eq("client_id", id)
-        .order("due_date", { ascending: true, nullsFirst: false })
-        .limit(20),
-      supabase
-        .from("documents")
-        .select("*")
-        .eq("client_id", id)
-        .order("created_at", { ascending: false }),
-      // Hanya yang uangnya benar-benar sudah diterima — ini yang dipakai
-      // menghitung sisa tagihan tiap project.
-      supabase
-        .from("incomes")
-        .select("project_id, amount")
-        .eq("client_id", id)
-        .eq("status", "received"),
-    ]);
+    supabase.from("clients").select("*").eq("id", id).single(),
+    supabase
+      .from("projects")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("tasks")
+      .select("*")
+      .eq("client_id", id)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(20),
+    supabase
+      .from("documents")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+    // Hanya yang uangnya benar-benar sudah diterima — ini yang dipakai
+    // menghitung sisa tagihan tiap project.
+    supabase
+      .from("incomes")
+      .select("project_id, amount")
+      .eq("client_id", id)
+      .eq("status", "received"),
+  ]);
+
+  if (!data) notFound();
+  const client = data as Client;
 
   const allDocuments = (documents ?? []) as Document[];
 
