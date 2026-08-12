@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { MemberAvatar } from "@/components/member-avatar";
 import { USER_ROLE_LABEL, type Profile } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
+import { PasswordForm } from "./password-form";
 
 export default async function ProfilePage() {
   const current = await getCurrentUser();
@@ -43,9 +44,17 @@ export default async function ProfilePage() {
             <p className="eyebrow">Email</p>
             <p className="mt-0.5 text-sm">{current.user.email}</p>
             <p className="mt-1 text-xs text-ink-subtle">
-              Email dan password diubah lewat dashboard Supabase, bukan dari
-              sini.
+              Email diubah lewat dashboard Supabase, bukan dari sini.
             </p>
+          </div>
+
+          <div className="mt-5 border-t border-line pt-4">
+            <h2 className="text-base">Ganti Password</h2>
+            <p className="mb-4 mt-0.5 text-xs text-ink-subtle">
+              Kalau passwordmu dibuatkan admin dan dikirim lewat chat, ganti di
+              sini supaya cuma kamu yang tahu.
+            </p>
+            <PasswordForm />
           </div>
         </section>
 

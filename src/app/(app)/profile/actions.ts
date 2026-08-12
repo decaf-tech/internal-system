@@ -59,3 +59,58 @@ export async function updateProfile(
   revalidatePath("/", "layout");
   return { error: null, ok: true };
 }
+
+/**
+ * Ganti password sendiri, tanpa lewat email.
+ *
+ * Admin membuatkan password awal di dashboard Supabase dan menyampaikannya
+ * lewat jalur lain (WhatsApp). Orangnya masuk, lalu menggantinya di sini —
+ * jadi password yang akhirnya dipakai cuma dia yang tahu.
+ */
+export async function changePassword(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const current = String(formData.get("current_password") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (password.length < 8) return { error: "Password baru minimal 8 karakter." };
+  if (password !== confirm) return { error: "Konfirmasi password tidak sama." };
+  if (password === current) {
+    return { error: "Password baru sama dengan yang lama." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "Sesi habis. Silakan masuk lagi." };
+
+  // Password lama diminta supaya laptop yang tertinggal dalam keadaan
+  // terbuka tidak bisa dipakai mengunci pemiliknya sendiri. Supabase tidak
+  // menyediakan pemeriksaan terpisah untuk ini, jadi caranya login ulang —
+  // user dan sesinya sama, cuma cookienya yang tersegarkan.
+  const { error: wrongPassword } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: current,
+  });
+  if (wrongPassword) return { error: "Password saat ini salah." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    console.error("Gagal mengganti password:", error);
+    return { error: "Gagal menyimpan password baru." };
+  }
+
+  // Isi passwordnya tidak pernah ikut tercatat — cuma peristiwanya.
+  await logActivity(supabase, {
+    actorId: user.id,
+    entityType: "profile",
+    entityId: user.id,
+    action: "updated",
+    summary: "mengganti password sendiri",
+  });
+
+  return { error: null, ok: true };
+}
