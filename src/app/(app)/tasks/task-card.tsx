@@ -32,11 +32,9 @@ function needsAttention(task: TaskWithRelations) {
 export function TaskCardBody({
   task,
   labels,
-  onOpen,
 }: {
   task: TaskWithRelations;
   labels: Label[];
-  onOpen?: () => void;
 }) {
   // Tugas selesai tidak perlu peringatan "telat" — tenggatnya sudah lewat
   // relevansinya begitu pekerjaannya kelar.
@@ -59,13 +57,9 @@ export function TaskCardBody({
       <LabelStrips labels={labels} />
 
       <div className="flex items-start justify-between gap-1.5">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="min-w-0 flex-1 text-left text-[13px] leading-snug font-medium text-ink"
-        >
+        <span className="min-w-0 flex-1 text-[13px] leading-snug font-medium text-ink">
           {task.title}
-        </button>
+        </span>
 
         <div className="flex shrink-0 items-center gap-1">
           {alert && (
@@ -149,10 +143,11 @@ export function SortableTaskCard({
         touchAction: "manipulation",
       }}
       className="cursor-grab rounded-sm border p-2.5 shadow-[0_1px_2px_rgba(28,24,21,0.08)] select-none active:cursor-grabbing"
+      onClick={onOpen}
       {...attributes}
       {...listeners}
     >
-      <TaskCardBody task={task} labels={labels} onOpen={onOpen} />
+      <TaskCardBody task={task} labels={labels} />
     </li>
   );
 }
