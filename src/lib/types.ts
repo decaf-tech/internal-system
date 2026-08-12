@@ -95,6 +95,44 @@ export type Project = {
   updated_at: string;
 };
 
+/**
+ * Lima tahap tetap, sengaja tidak dapat dikustomisasi per pengguna —
+ * tim tiga orang, fleksibilitas itu cuma menambah keputusan yang harus
+ * dibuat sebelum bisa mulai pakai (PRD v3.0 §2.3). Kalau tahapnya terasa
+ * tidak pas nanti, ubah lewat migration baru, bukan pengaturan UI.
+ */
+export type ProspectStage =
+  | "prospek"
+  | "penawaran"
+  | "negosiasi"
+  | "menang"
+  | "kalah";
+
+/**
+ * Calon klien. Tabel sendiri, BUKAN kolom status di `clients` — begitu
+ * prospek yang kalah numpuk di sana, setiap pemilih klien di seluruh
+ * aplikasi ikut kotor (PRD v3.0 §2.1).
+ */
+export type Prospect = {
+  id: string;
+  name: string;
+  company: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  stage: ProspectStage;
+  /** Opsional — prospek awal yang nilainya belum jelas tetap mudah dicatat. */
+  estimated_value: number | null;
+  next_follow_up_date: string | null;
+  /** Wajib saat stage 'kalah', divalidasi di server action bukan database. */
+  lost_reason: string | null;
+  owner_id: string | null;
+  /** Terisi saat konversi menang; barisnya sendiri tetap jadi riwayat. */
+  client_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CardColor =
   | "blue"
   | "purple"
@@ -226,6 +264,12 @@ export type TaskWithRelations = Task & {
   notes: NoteSummary[];
   /** Lampiran tugas. File-nya di Drive, ini cuma metadatanya (PRD §2.1). */
   documents: Document[];
+};
+
+export type ProspectWithRelations = Prospect & {
+  owner: Member | null;
+  /** Terisi cuma untuk prospek yang sudah dikonversi jadi klien. */
+  client: Pick<Client, "id" | "name"> | null;
 };
 
 export type ExpenseWithRelations = Expense & {
@@ -412,6 +456,7 @@ export type ActivityAction =
 export type ActivityEntityType =
   | "task"
   | "client"
+  | "prospect"
   | "project"
   | "expense"
   | "income"
@@ -482,6 +527,45 @@ export const CLIENT_STATUS_LABEL: Record<ClientStatus, string> = {
   on_hold: "Ditunda",
   done: "Selesai",
   lost: "Batal",
+};
+
+export const PROSPECT_STAGE_LABEL: Record<ProspectStage, string> = {
+  prospek: "Prospek",
+  penawaran: "Penawaran",
+  negosiasi: "Negosiasi",
+  menang: "Menang",
+  kalah: "Kalah",
+};
+
+// Urutan kolom papan pipeline, kiri ke kanan — alurnya memang linear,
+// dua kolom terakhir adalah dua ujung yang saling meniadakan.
+export const PROSPECT_STAGE_ORDER: ProspectStage[] = [
+  "prospek",
+  "penawaran",
+  "negosiasi",
+  "menang",
+  "kalah",
+];
+
+/** Tahap yang belum selesai — dasar hitungan "prospek aktif" & nilai
+ *  pipeline berjalan di strip statistik (PRD v3.0 §2.4). */
+export const PROSPECT_OPEN_STAGES: ProspectStage[] = [
+  "prospek",
+  "penawaran",
+  "negosiasi",
+];
+
+// Senada dengan TASK_STATUS_TINT: tint tipis supaya kolom terbaca sebagai
+// wilayah terpisah tanpa menenggelamkan kartu di dalamnya.
+export const PROSPECT_STAGE_TINT: Record<
+  ProspectStage,
+  { header: string; body: string }
+> = {
+  prospek: { header: "#dde5e9", body: "#f4f7f8" },
+  penawaran: { header: "#fbf0d5", body: "#fdfaf2" },
+  negosiasi: { header: "#fbe1cd", body: "#fdf7f1" },
+  menang: { header: "#dfe9dc", body: "#f6faf4" },
+  kalah: { header: "#e9e2e2", body: "#f8f5f5" },
 };
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {

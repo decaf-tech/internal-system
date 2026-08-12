@@ -69,7 +69,7 @@ export default async function ClientDetailPage({
   return (
     <>
       <Link
-        href="/clients"
+        href="/clients/list"
         className="eyebrow mb-4 inline-block hover:text-accent"
       >
         ← Semua Klien

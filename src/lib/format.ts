@@ -90,6 +90,21 @@ function toJakarta(value: string | Date) {
   );
 }
 
+/**
+ * "2026-08-12" — tanggal hari ini menurut jam dinding Jakarta, bentuk yang
+ * sama dengan kolom `date` di database.
+ *
+ * `new Date().toISOString().slice(0, 10)` yang dipakai di beberapa tempat
+ * lain memberi tanggal UTC. Untuk mengisi nilai awal form selisih itu tidak
+ * terasa, tapi untuk *membandingkan* ("follow-up yang jatuh tempo hari
+ * ini") ia salah setiap hari antara tengah malam dan jam 7 pagi WIB —
+ * tepat pada jam-jam pertama hari kerja, dan justru pada fitur yang
+ * gunanya mengingatkan supaya tidak ada yang terlewat.
+ */
+export function todayJakarta() {
+  return format(toJakarta(new Date()), "yyyy-MM-dd");
+}
+
 /** "12 Agu 2026" — dalam WIB. */
 export function formatDate(value: string | Date | null | undefined) {
   if (!value) return "—";

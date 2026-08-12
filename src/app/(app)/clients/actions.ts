@@ -17,6 +17,21 @@ function text(formData: FormData, key: string) {
   return value.length > 0 ? value : null;
 }
 
+/**
+ * Data klien muncul di dua rute sejak halaman ini jadi dua tab: daftarnya di
+ * `/clients/list`, dan jumlah "Klien Aktif" di strip statistik yang juga
+ * tergambar di tab Pipeline. `revalidatePath` dengan path harfiah cuma
+ * membatalkan satu halaman, jadi keduanya memang harus disebut — kalau tidak,
+ * strip statistiknya diam-diam menampilkan angka lama.
+ *
+ * Tidak diekspor: di berkas `"use server"` setiap ekspor jadi endpoint yang
+ * bisa dipanggil dari browser, dan ini cuma penolong lokal.
+ */
+function revalidateClientPages() {
+  revalidatePath("/clients");
+  revalidatePath("/clients/list");
+}
+
 export async function createClientRecord(
   _prev: FormState,
   formData: FormData,
@@ -58,7 +73,7 @@ export async function createClientRecord(
     summary: `menambah klien "${name}"`,
   });
 
-  revalidatePath("/clients");
+  revalidateClientPages();
   return { error: null, ok: true };
 }
 
@@ -101,7 +116,7 @@ export async function updateClientRecord(
     summary: `mengubah data klien "${name}"`,
   });
 
-  revalidatePath("/clients");
+  revalidateClientPages();
   revalidatePath(`/clients/${clientId}`);
   return { error: null, ok: true };
 }
@@ -130,8 +145,8 @@ export async function deleteClientRecord(clientId: string) {
     });
   }
 
-  revalidatePath("/clients");
-  redirect("/clients");
+  revalidateClientPages();
+  redirect("/clients/list");
 }
 
 export async function createProject(

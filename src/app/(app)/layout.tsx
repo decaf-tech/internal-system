@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
 import { MobileTabBar, Nav } from "@/components/nav";
+import { NotificationBell } from "@/components/notification-bell";
+import { getNotificationSummary } from "@/lib/notifications/compute";
 import { initials } from "@/lib/format";
 import { USER_ROLE_LABEL, type UserRole } from "@/lib/types";
 
@@ -13,6 +15,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // pegangan sebenarnya — proxy bisa saja terlewat kalau matcher berubah.
   if (!current) redirect("/login");
 
+  // Dihitung di sini, di layout, supaya lonceng ikut segar di setiap halaman
+  // tanpa satu pun halaman perlu tahu tentangnya (PRD v3.0 §3.1).
+  const notifications = await getNotificationSummary(current.user.id);
+
   const name = current.profile?.full_name ?? current.user.email ?? "Tim";
   const role = current.profile?.role as UserRole | undefined;
   const isSuperAdmin = current.profile?.is_super_admin ?? false;
@@ -22,20 +28,25 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       {/* Di HP sisi ini menyusut jadi satu bilah judul; menunya pindah ke
           bawah layar (MobileTabBar) supaya terjangkau jempol. */}
       <aside className="border-b border-line bg-surface lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:border-r lg:border-b-0">
-        <div className="flex items-center justify-between gap-4 px-4 py-3 lg:block lg:py-4">
+        {/* Tetap satu baris mendatar di layar lebar, bukan menumpuk: lonceng
+            perlu tempat yang sama-sama "kanan atas" di kedua ukuran, dan di
+            desktop kepala sidebar inilah kanan atasnya. */}
+        <div className="flex items-center justify-between gap-4 px-4 py-3 lg:py-4">
           <div>
             <p className="eyebrow">Sistem Internal</p>
             <p className="font-serif text-xl leading-tight">Decaf</p>
           </div>
 
-          <div className="flex items-center gap-1 lg:hidden">
+          <div className="flex items-center gap-1">
+            <NotificationBell summary={notifications} />
+
             {/* Admin tinggal di sini, bukan di bilah menu bawah — lihat
                 komentar di components/nav.tsx. */}
             {isSuperAdmin && (
               <Link
                 href="/admin"
                 aria-label="Admin"
-                className="icon-btn"
+                className="icon-btn lg:hidden"
               >
                 <svg
                   width="18"
@@ -58,7 +69,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <Link
               href="/profile"
               aria-label="Profil saya"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-soft font-mono text-xs text-forest"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-forest-soft font-mono text-xs text-forest lg:hidden"
             >
               {initials(name)}
             </Link>

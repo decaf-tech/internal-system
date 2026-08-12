@@ -141,7 +141,9 @@ export default async function DashboardPage() {
         <Link href="/tasks" className="btn btn-ghost">
           Papan Tugas →
         </Link>
-        <Link href="/clients" className="btn btn-ghost">
+        {/* Ke daftarnya, bukan ke `/clients` yang sekarang mendarat di tab
+            Pipeline — tombolnya bilang "Lihat Klien". */}
+        <Link href="/clients/list" className="btn btn-ghost">
           Lihat Klien →
         </Link>
         <Link href="/finance" className="btn btn-ghost col-span-2 sm:col-span-1">

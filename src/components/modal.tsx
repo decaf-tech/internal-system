@@ -211,44 +211,73 @@ export function PromptDialog({
   defaultValue?: string;
   confirmLabel?: string;
 }) {
-  const [value, setValue] = useState(defaultValue);
-
-  useEffect(() => {
-    if (open) setValue(defaultValue);
-  }, [open, defaultValue]);
-
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const trimmed = value.trim();
-          if (!trimmed) return;
-          onSubmit(trimmed);
-          onClose();
-        }}
-      >
-        <label className="label" htmlFor="prompt-dialog-input">
-          {label}
-        </label>
-        <input
-          id="prompt-dialog-input"
-          type="text"
-          autoFocus
-          className="field"
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
+      {/*
+        Isinya baru dipasang saat dialog terbuka — `Modal` selalu merender
+        <dialog>-nya, jadi tanpa ini kolom teksnya hidup terus dan masih
+        berisi ketikan sesi sebelumnya saat dibuka lagi. Memasangnya di
+        sini membuat `useState(defaultValue)` yang mengurus penyetelan
+        ulang, bukan efek yang menyetel state setelah render.
+      */}
+      {open && (
+        <PromptDialogForm
+          onClose={onClose}
+          onSubmit={onSubmit}
+          label={label}
+          defaultValue={defaultValue}
+          confirmLabel={confirmLabel}
         />
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Batal
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={!value.trim()}>
-            {confirmLabel}
-          </button>
-        </div>
-      </form>
+      )}
     </Modal>
+  );
+}
+
+function PromptDialogForm({
+  onClose,
+  onSubmit,
+  label,
+  defaultValue,
+  confirmLabel,
+}: {
+  onClose: () => void;
+  onSubmit: (value: string) => void;
+  label: string;
+  defaultValue: string;
+  confirmLabel: string;
+}) {
+  const [value, setValue] = useState(defaultValue);
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        const trimmed = value.trim();
+        if (!trimmed) return;
+        onSubmit(trimmed);
+        onClose();
+      }}
+    >
+      <label className="label" htmlFor="prompt-dialog-input">
+        {label}
+      </label>
+      <input
+        id="prompt-dialog-input"
+        type="text"
+        autoFocus
+        className="field"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+      />
+      <div className="mt-4 flex justify-end gap-2">
+        <button type="button" className="btn btn-ghost" onClick={onClose}>
+          Batal
+        </button>
+        <button type="submit" className="btn btn-primary" disabled={!value.trim()}>
+          {confirmLabel}
+        </button>
+      </div>
+    </form>
   );
 }
 
