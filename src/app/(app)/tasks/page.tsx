@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getIndonesianHolidaysForYears } from "@/lib/holidays";
 import { PageHeader } from "@/components/page-header";
 import {
   TASK_STATUS_ORDER,
@@ -36,6 +37,8 @@ type EventRow = Omit<
 export default async function TasksPage() {
   const supabase = await createClient();
 
+  const thisYear = new Date().getFullYear();
+
   const [
     tasksResult,
     membersResult,
@@ -44,6 +47,7 @@ export default async function TasksPage() {
     columnsResult,
     labelsResult,
     eventsResult,
+    holidays,
   ] = await Promise.all([
     supabase
       .from("tasks")
@@ -70,6 +74,9 @@ export default async function TasksPage() {
          event_exceptions(*)`,
       )
       .order("event_date", { ascending: true }),
+    // Tahun sebelum & sesudah ikut diambil supaya penanda libur tidak
+    // hilang begitu kalender digeser melewati batas tahun.
+    getIndonesianHolidaysForYears([thisYear - 1, thisYear, thisYear + 1]),
   ]);
 
   // Relasi banyak-ke-banyak datang sebagai daftar objek; diratakan jadi
@@ -139,6 +146,7 @@ export default async function TasksPage() {
         tasks={tasks}
         columns={columns}
         events={events}
+        holidays={holidays}
         options={options}
       />
     </>

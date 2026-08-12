@@ -15,6 +15,7 @@ import {
   taskRange,
 } from "@/lib/date-range";
 import { eventOccurrenceKey, expandOccurrences, formatEventTime } from "@/lib/events";
+import type { Holiday } from "@/lib/holidays";
 import {
   CARD_COLORS,
   MEMBER_COLORS,
@@ -117,6 +118,7 @@ type Selection = { anchor: string; hover: string };
 export function TaskCalendar({
   tasks,
   eventSeries,
+  holidays,
   onOpenTask,
   onOpenEvent,
   onCreateEvent,
@@ -124,6 +126,7 @@ export function TaskCalendar({
 }: {
   tasks: TaskWithRelations[];
   eventSeries: EventSeriesWithRelations[];
+  holidays: Holiday[];
   onOpenTask: (task: TaskWithRelations) => void;
   onOpenEvent: (occurrence: EventOccurrence) => void;
   onCreateEvent: () => void;
@@ -309,6 +312,14 @@ export function TaskCalendar({
     return map;
   }, [eventSeries, weeks]);
 
+  // API-nya per tahun kalender, tapi dipetakan sekali di sini per tanggal
+  // supaya pemakaiannya di WeekRow sama gampangnya dengan occurrencesByDay.
+  const holidaysByDay = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const holiday of holidays) map.set(holiday.date, holiday.name);
+    return map;
+  }, [holidays]);
+
   // Rentang yang dipakai menggambar: hasil seretan yang sedang berjalan
   // menang atas jadwal optimistis, yang menang atas data dari server.
   const entries = useMemo<Entry[]>(() => {
@@ -423,6 +434,7 @@ export function TaskCalendar({
             month={month}
             entries={entries}
             occurrencesByDay={occurrencesByDay}
+            holidaysByDay={holidaysByDay}
             selection={selection}
             dragging={drag !== null}
             draggingTaskId={drag?.taskId ?? null}
@@ -464,6 +476,7 @@ function WeekRow({
   month,
   entries,
   occurrencesByDay,
+  holidaysByDay,
   selection,
   dragging,
   draggingTaskId,
@@ -475,6 +488,7 @@ function WeekRow({
   month: Date;
   entries: Entry[];
   occurrencesByDay: Map<string, EventOccurrence[]>;
+  holidaysByDay: Map<string, string>;
   selection: Selection | null;
   dragging: boolean;
   draggingTaskId: string | null;
@@ -505,13 +519,17 @@ function WeekRow({
           const outside = !isSameMonth(day, month);
           const selected =
             bounds !== null && key >= bounds.start && key <= bounds.end;
+          const holiday = holidaysByDay.get(key);
 
           return (
             <button
               key={key}
               type="button"
               data-day={key}
-              aria-label={`Tambah tugas ${format(day, "d MMMM yyyy", { locale: localeId })}`}
+              aria-label={`Tambah tugas ${format(day, "d MMMM yyyy", { locale: localeId })}${
+                holiday ? ` — Libur: ${holiday}` : ""
+              }`}
+              title={holiday}
               onPointerDown={(event) => {
                 // Cegah seleksi teks saat menyeret beberapa hari.
                 event.preventDefault();
@@ -520,9 +538,13 @@ function WeekRow({
               className={`touch-none border-r border-line transition-colors last:border-r-0 ${
                 selected
                   ? "bg-accent-soft"
-                  : outside
-                    ? "bg-surface-muted/40 hover:bg-surface-muted"
-                    : "hover:bg-surface-muted/60"
+                  : holiday
+                    ? outside
+                      ? "bg-danger-soft/30 hover:bg-danger-soft/50"
+                      : "bg-danger-soft/60 hover:bg-danger-soft"
+                    : outside
+                      ? "bg-surface-muted/40 hover:bg-surface-muted"
+                      : "hover:bg-surface-muted/60"
               }`}
             />
           );
@@ -534,19 +556,27 @@ function WeekRow({
       <div className="pointer-events-none relative grid grid-cols-7">
         {week.map((day) => {
           const outside = !isSameMonth(day, month);
+          const holiday = holidaysByDay.get(dateKey(day));
           return (
             <div key={dateKey(day)} className="px-1.5 pt-1.5">
               <span
                 className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-mono text-[11px] ${
                   isToday(day)
                     ? "bg-accent text-white"
-                    : outside
-                      ? "text-ink-subtle"
-                      : "text-ink-muted"
+                    : holiday
+                      ? "text-danger"
+                      : outside
+                        ? "text-ink-subtle"
+                        : "text-ink-muted"
                 }`}
               >
                 {format(day, "d")}
               </span>
+              {holiday && (
+                <p className="truncate text-[9px] leading-tight text-danger">
+                  {holiday}
+                </p>
+              )}
             </div>
           );
         })}

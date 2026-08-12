@@ -9,6 +9,7 @@ import type {
   TaskStatus,
   TaskWithRelations,
 } from "@/lib/types";
+import type { Holiday } from "@/lib/holidays";
 import { createTask, deleteTask, updateTask } from "./actions";
 import { EMPTY_FILTER, FilterBar, applyFilter, type TaskFilter } from "./filter-bar";
 import { EventForm } from "./event-form";
@@ -31,11 +32,13 @@ export function TaskWorkspace({
   tasks,
   columns,
   events,
+  holidays,
   options,
 }: {
   tasks: TaskWithRelations[];
   columns: BoardColumn[];
   events: EventSeriesWithRelations[];
+  holidays: Holiday[];
   options: TaskFormOptions;
 }) {
   const [view, setView] = useState<View>("board");
@@ -127,6 +130,7 @@ export function TaskWorkspace({
         <TaskCalendar
           tasks={visible}
           eventSeries={events}
+          holidays={holidays}
           onOpenTask={openTask}
           onOpenEvent={setEventModal}
           onCreateEvent={() => setEventModal(true)}
