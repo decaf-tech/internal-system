@@ -29,7 +29,7 @@ tidak perlu disentuh.
 1. Buat project baru di [supabase.com](https://supabase.com) (free tier).
 2. Buka **SQL Editor → New query**, paste seluruh isi
    [`supabase/schema.sql`](supabase/schema.sql), lalu **Run**.
-   Lanjutkan dengan migration `002`–`007` secara berurutan. Semuanya aman
+   Lanjutkan dengan migration `002`–`012` secara berurutan. Semuanya aman
    dijalankan berulang.
 
    > Berkas migration **tidak ikut di repo ini** — sebagiannya menembak
@@ -101,6 +101,14 @@ Anggota lain tidak perlu login ke akun ini — mereka mengakses file lewat siste
    - **APIs & Services → Library** → cari **Google Drive API** → **Enable**.
      Wajib — tanpa ini OAuth-nya bisa sukses tapi tiap panggilan Drive dibalas
      `403 accessNotConfigured`.
+   - Di Library yang sama, cari **Google Docs API** → **Enable**. Dipakai
+     fitur **dokumen dari template** (mengisi placeholder di Google Doc).
+     Kasusnya persis sama dengan Drive API di atas: enable API itu setelan
+     per-project, terpisah dari scope OAuth — tanpa ini pembuatan dokumen
+     dibalas `403 accessNotConfigured` walau login Google-nya sehat.
+     Scope-nya **tidak perlu ditambah**: `drive.file` sudah sah untuk Docs
+     API selama aplikasi cuma menyentuh file yang dibuatnya sendiri, dan
+     dokumen dari template selalu lahir dari `files.copy` milik aplikasi.
    - **Google Auth Platform** (nama baru untuk "OAuth consent screen") →
      **Overview**, isi nama aplikasi & email support, **Audience: External**.
      Di sub-menu **Audience**, tambahkan alamat akun Drive tim sebagai
@@ -180,8 +188,9 @@ src/
   components/         UI yang dipakai lintas fitur
   lib/
     storage/          StorageProvider + GoogleDriveProvider
+    templates/        Placeholder & penomoran dokumen dari template
     supabase/         Client untuk browser & server
-    actions/          Server action lintas fitur (dokumen)
+    actions/          Server action lintas fitur (dokumen, template)
   proxy.ts            Refresh sesi + penjaga route
 supabase/schema.sql   Skema database
 ```
@@ -196,6 +205,18 @@ supabase/schema.sql   Skema database
   fallback — di jalur itu plafon 4.5MB Vercel berlaku penuh.
 - **Menghapus dokumen** memindahkan file ke Trash Drive, bukan menghapus
   permanen. Masih bisa dipulihkan 30 hari.
+- **Dokumen dari template** (Dokumen → Template) lahir sebagai Google Doc,
+  bukan PDF: dibuat, direview & disunting di Google Docs, baru difinalisasi
+  jadi PDF lewat tombol "Jadikan PDF" — dan cuma super admin yang bisa
+  menekannya. Supaya penyuntingannya benar-benar bisa dilakukan, folder
+  root Drive tim perlu di-share sebagai **Editor** ke akun Google pribadi
+  masing-masing anggota (sekali saja, manual di drive.google.com). Tanpa
+  itu, tautan "Buka di Google Docs" mendarat di layar minta akses.
+  Google Doc asli tidak menghitung kuota penyimpanan Drive; yang menghitung
+  cuma PDF hasil finalisasi. Identitas perusahaan yang mengisi placeholder
+  `{{perusahaan.*}}` (nama, alamat, rekening bank, NPWP) diatur lewat
+  **Dokumen → Perusahaan** di dalam aplikasi — bisa diubah siapa saja yang
+  login, tanpa perlu env var atau redeploy.
 - **Menghapus klien** ikut menghapus project & tugas terkait
   (`ON DELETE CASCADE`), tapi file di Drive tetap ada.
 - **Pantau kuota Drive.** Kalau sudah mendekati ~12GB (80% dari 15GB), saatnya

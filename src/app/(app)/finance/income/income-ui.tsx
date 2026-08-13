@@ -3,6 +3,8 @@
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import { ConfirmButton, Modal, SubmitButton } from "@/components/modal";
 import { IncomeStatusBadge } from "@/components/badge";
+import { DocumentPanel } from "@/components/document-panel";
+import { documentsForIncome } from "@/lib/actions/documents";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { todayKey } from "@/lib/date-range";
 import {
@@ -15,6 +17,7 @@ import {
   INCOME_STATUS_LABEL,
   INCOME_STATUS_ORDER,
   PAYMENT_METHOD_LABEL,
+  type Document,
   type IncomeStatus,
   type IncomeWithRelations,
   type Project,
@@ -297,6 +300,52 @@ function IncomeForm({
 }
 
 /**
+ * Berkas yang menempel di satu tagihan — invoice, bukti transfer, berita
+ * acara. Di sinilah "Dari Template" paling sering dipakai: satu termin
+ * satu invoice, dengan jumlah dan jenis tagihan yang sudah ada di baris
+ * ini, jadi tidak ada angka yang perlu diketik ulang.
+ *
+ * Daftarnya diambil sendiri lewat server action (pola sama seperti
+ * lampiran rapat di `event-form.tsx`) — halaman Pemasukan tidak ikut
+ * menarik dokumen tiap baris cuma untuk berjaga-jaga kalau ada yang
+ * membuka modalnya.
+ */
+function IncomeDocuments({ income }: { income: IncomeWithRelations }) {
+  const [documents, setDocuments] = useState<Document[] | null>(null);
+
+  const reload = useCallback(() => {
+    void documentsForIncome(income.id).then((found) =>
+      setDocuments(found as Document[]),
+    );
+  }, [income.id]);
+
+  useEffect(reload, [reload]);
+
+  if (documents === null) {
+    return (
+      <p className="mt-4 border-t border-line pt-3 text-xs text-ink-subtle">
+        Memuat dokumen…
+      </p>
+    );
+  }
+
+  return (
+    <DocumentPanel
+      documents={documents}
+      link={{
+        incomeId: income.id,
+        clientId: income.client_id,
+        projectId: income.project_id,
+      }}
+      title="Dokumen tagihan"
+      variant="inline"
+      emptyLabel="Belum ada. Invoice bisa dibuat dari template di sini."
+      onChanged={reload}
+    />
+  );
+}
+
+/**
  * Satu baris pemasukan sebagai kartu, bukan baris tabel.
  *
  * Tabel lima kolom memaksa gulir menyamping di HP, dan yang paling sering
@@ -399,12 +448,15 @@ export function IncomeCard({
 
       <Modal open={editing} onClose={closeEdit} title="Ubah Pemasukan">
         {editing && (
-          <IncomeForm
-            action={updateIncome.bind(null, income.id)}
-            initial={income}
-            options={options}
-            onDone={closeEdit}
-          />
+          <>
+            <IncomeForm
+              action={updateIncome.bind(null, income.id)}
+              initial={income}
+              options={options}
+              onDone={closeEdit}
+            />
+            <IncomeDocuments income={income} />
+          </>
         )}
       </Modal>
     </li>

@@ -1,15 +1,19 @@
 import "server-only";
 
 import { Readable } from "node:stream";
+import { docs as docsApi } from "@googleapis/docs";
 import { auth as googleAuth, drive as driveApi } from "@googleapis/drive";
 import { googleDrive as googleDriveEnv } from "@/lib/env";
+import { GOOGLE_DOC_MIME } from "@/lib/documents/types";
 import type {
+  CopyDocInput,
   DownloadResult,
   ResumableUpload,
   ResumableUploadInput,
   StorageProvider,
   StorageQuota,
   StoredFile,
+  TemplateDocProvider,
   UploadInput,
 } from "./types";
 
@@ -34,9 +38,17 @@ function escapeQueryValue(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-export class GoogleDriveProvider implements StorageProvider {
+export class GoogleDriveProvider
+  implements StorageProvider, TemplateDocProvider
+{
   private auth = createOAuthClient();
   private drive = driveApi({ version: "v3", auth: this.auth });
+  // OAuth2 client yang sama persis dengan Drive. Scope `drive.file` sudah
+  // sah untuk Docs API selama aplikasi cuma menyentuh file yang dibuatnya
+  // sendiri — dan dokumen dari template selalu begitu, karena lahir dari
+  // `files.copy` di sini. Yang tetap wajib: Google Docs API di-Enable di
+  // project Cloud Console yang sama (README §2), terpisah dari scope.
+  private docs = docsApi({ version: "v1", auth: this.auth });
   private rootFolderId = googleDriveEnv().rootFolderId;
 
   // Cache pemetaan path -> folderId selama umur instance, supaya upload
@@ -226,6 +238,82 @@ export class GoogleDriveProvider implements StorageProvider {
       fileId,
       requestBody: { trashed: true },
     });
+  }
+
+  // -------------------------------------------------------------------
+  // TemplateDocProvider
+  // -------------------------------------------------------------------
+
+  async copyDoc(input: CopyDocInput): Promise<StoredFile> {
+    const folderId = await this.ensureFolder(input.folderPath);
+
+    const copied = await this.drive.files.copy({
+      fileId: input.fileId,
+      requestBody: {
+        name: input.name,
+        parents: [folderId],
+        // Drive mengubah formatnya saat menyalin kalau mimeType tujuan
+        // diminta di sini — jalur yang sama yang dipakai "Open with Google
+        // Docs" di UI Drive. Tanpa baris ini, .docx tetap .docx dan Docs
+        // API tidak bisa menyentuhnya sama sekali.
+        ...(input.convert ? { mimeType: GOOGLE_DOC_MIME } : {}),
+      },
+      fields: "id, name, mimeType, size, webViewLink",
+    });
+
+    const file = copied.data;
+    if (!file.id) {
+      throw new Error("Google Drive tidak mengembalikan ID salinan template.");
+    }
+
+    return {
+      id: file.id,
+      name: file.name ?? input.name,
+      mimeType: file.mimeType ?? GOOGLE_DOC_MIME,
+      // Google Doc native tidak punya ukuran (dan tidak memakan kuota
+      // Drive) — 0 di sini berarti "tidak berlaku", bukan "file kosong".
+      sizeBytes: Number(file.size ?? 0),
+      webLink: file.webViewLink ?? null,
+    };
+  }
+
+  async fillPlaceholders(
+    fileId: string,
+    replacements: Record<string, string>,
+  ): Promise<Record<string, number>> {
+    const keys = Object.keys(replacements);
+    if (keys.length === 0) return {};
+
+    const { data } = await this.docs.documents.batchUpdate({
+      documentId: fileId,
+      requestBody: {
+        requests: keys.map((key) => ({
+          replaceAllText: {
+            containsText: { text: `{{${key}}}`, matchCase: true },
+            replaceText: replacements[key],
+          },
+        })),
+      },
+    });
+
+    // Balasan datang berurutan sesuai requests yang dikirim, jadi indeksnya
+    // yang memasangkan hitungan dengan key-nya.
+    const replies = data.replies ?? [];
+    return Object.fromEntries(
+      keys.map((key, index) => [
+        key,
+        replies[index]?.replaceAllText?.occurrencesChanged ?? 0,
+      ]),
+    );
+  }
+
+  async exportAs(fileId: string, mimeType: string): Promise<Buffer> {
+    const res = await this.drive.files.export(
+      { fileId, mimeType },
+      { responseType: "arraybuffer" },
+    );
+
+    return Buffer.from(res.data as unknown as ArrayBuffer);
   }
 
   async getQuota(): Promise<StorageQuota> {

@@ -202,6 +202,30 @@ export async function documentsForEvent(eventId: string) {
   return data ?? [];
 }
 
+/**
+ * Berkas yang menempel di satu baris tagihan.
+ *
+ * Ini tempat invoice tinggal: satu termin = satu baris `incomes` = satu
+ * invoice, dan menautkannya ke sana (bukan cuma ke project) yang membuat
+ * "tagihan mana yang invoice-nya belum dibuat" bisa dijawab dengan
+ * melihat, bukan mengingat.
+ */
+export async function documentsForIncome(incomeId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("income_id", incomeId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Gagal memuat dokumen tagihan:", error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function deleteDocument(documentId: string) {
   const supabase = await createClient();
 

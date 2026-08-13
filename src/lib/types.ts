@@ -75,6 +75,8 @@ export type Client = {
   phone: string | null;
   status: ClientStatus;
   notes: string | null;
+  /** Dicetak di blok "ditagihkan kepada" dokumen dari template. */
+  address: string | null;
   drive_folder_id: string | null;
   created_by: string | null;
   created_at: string;
@@ -273,8 +275,38 @@ export type Document = {
   note_id: string | null;
   event_id: string | null;
   folder_id: string | null;
+  /** Terisi kalau dokumen ini lahir dari sebuah template (migration 011). */
+  template_id: string | null;
+  /** Nomor resmi dokumen, mis. "DC/INV/001/VIII/2026". */
+  doc_number: string | null;
   uploaded_by: string | null;
   created_at: string;
+};
+
+/**
+ * Template dokumen — satu baris per jenis dokumen yang bisa diterbitkan
+ * (invoice, surat penawaran, kontrak, berita acara).
+ *
+ * Berupa data, bukan kode: menambah jenis dokumen baru cukup mengunggah
+ * berkasnya dan mengisi satu form, tanpa migration dan tanpa deploy.
+ * `fields` disimpan sebagai jsonb — bentuk terurainya `TemplateField[]`
+ * di `lib/templates/types.ts`.
+ */
+export type DocumentTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+  drive_file_id: string;
+  drive_web_link: string | null;
+  /** Pola nama berkas hasil, boleh berisi placeholder. */
+  output_name: string;
+  /** Kode penomoran ('INV'). Null = template ini tidak bernomor. */
+  number_prefix: string | null;
+  fields: unknown;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 // Bentuk hasil query yang membawa relasi ikut serta (Supabase embed).
@@ -494,7 +526,8 @@ export type ActivityEntityType =
   | "profile"
   | "label"
   | "folder"
-  | "document";
+  | "document"
+  | "company_settings";
 
 export type ActivityLogEntry = {
   id: string;

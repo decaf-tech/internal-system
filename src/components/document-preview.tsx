@@ -1,11 +1,14 @@
 "use client";
 
 import { Modal } from "@/components/modal";
+import { isGoogleDoc } from "@/lib/documents/types";
 
 type PreviewableDocument = {
   id: string;
   name: string;
   mime_type: string | null;
+  /** Alamat editor aslinya — satu-satunya cara membuka Google Doc. */
+  drive_web_link?: string | null;
 };
 
 /** URL yang menyajikan file apa adanya, untuk ditampilkan di tempat. */
@@ -34,7 +37,24 @@ export function DocumentPreviewModal({
 }) {
   return (
     <Modal open={doc !== null} onClose={onClose} title={doc?.name ?? ""} wide>
-      {doc && (
+      {doc && isGoogleDoc(doc.mime_type) ? (
+        // Google Doc tidak punya byte tetap: `/api/documents/[id]/download`
+        // memang bisa mengekspornya, tapi yang keluar salinan mati. Yang
+        // berguna adalah editornya.
+        <div className="space-y-3">
+          <Unsupported message="Dokumen Google Docs — dibuka dan disunting langsung di Google." />
+          <div className="flex justify-end gap-2">
+            <a
+              href={doc.drive_web_link ?? "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary text-sm"
+            >
+              Buka di Google Docs
+            </a>
+          </div>
+        </div>
+      ) : doc ? (
         <div className="space-y-3">
           <PreviewBody doc={doc} />
 
@@ -56,7 +76,7 @@ export function DocumentPreviewModal({
             </a>
           </div>
         </div>
-      )}
+      ) : null}
     </Modal>
   );
 }

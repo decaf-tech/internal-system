@@ -37,6 +37,60 @@ export interface StorageProvider {
   getQuota(): Promise<StorageQuota>;
 }
 
+/**
+ * Kemampuan tambahan: menyalin sebuah dokumen template, mengisi
+ * placeholdernya, lalu mengekspornya jadi PDF.
+ *
+ * Sengaja BUKAN bagian dari `StorageProvider`. Interface itu berjanji satu
+ * hal — "simpan dan ambil byte" — dan janji itulah yang membuat pindah ke
+ * S3 atau Supabase Storage cuma soal mengganti satu baris di index.ts.
+ * Mengisi placeholder di dalam dokumen bukan pekerjaan penyimpanan: tidak
+ * ada gudang file yang bisa melakukannya, dan menaruhnya di sana berarti
+ * provider berikutnya wajib menulis tiga method yang cuma bisa melempar
+ * "tidak didukung".
+ *
+ * Jadi ini kemampuan terpisah yang boleh ada, boleh tidak — lihat
+ * `getTemplateDocs()` di index.ts. Kalau tidak ada, seluruh fitur dokumen
+ * dari template menyembunyikan dirinya sendiri, dan sisa aplikasi jalan
+ * seperti biasa.
+ */
+export interface TemplateDocProvider {
+  /**
+   * Salin sebuah file jadi dokumen baru di `folderPath`.
+   *
+   * `convert` meminta provider mengubahnya jadi dokumen yang bisa disunting
+   * di tempat (di Google Drive: .docx → Google Doc). Itu yang membuat
+   * template bisa masuk lewat fitur unggah biasa: tim menyusun templatenya
+   * di Word/Docs, mengunggahnya seperti file lain, dan aplikasi yang
+   * mengubahnya jadi dokumen hidup.
+   */
+  copyDoc(input: CopyDocInput): Promise<StoredFile>;
+
+  /**
+   * Cari-ganti teks di seluruh dokumen. Kunci map dipakai apa adanya
+   * sebagai `{{kunci}}`.
+   *
+   * Mengembalikan berapa kali tiap placeholder benar-benar ditemukan —
+   * itu satu-satunya cara mengetahui placeholder mana yang memang dipakai
+   * templatenya, dan karenanya mana yang perlu diperingatkan saat nilainya
+   * kosong.
+   */
+  fillPlaceholders(
+    fileId: string,
+    replacements: Record<string, string>,
+  ): Promise<Record<string, number>>;
+
+  /** Potret isi dokumen saat ini dalam format lain, mis. PDF. */
+  exportAs(fileId: string, mimeType: string): Promise<Buffer>;
+}
+
+export type CopyDocInput = {
+  fileId: string;
+  name: string;
+  folderPath: string[];
+  convert?: boolean;
+};
+
 export type StorageQuota = {
   usageBytes: number;
   /** `null` kalau akun tidak berbatas kuota (mis. Google Workspace tertentu). */

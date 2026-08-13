@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { getStorage, type StorageQuota } from "@/lib/storage";
 import type { Folder } from "@/lib/types";
 import { FileBrowser, type BrowserDocument } from "./file-browser";
+import { DocumentTabs } from "./tabs";
 
 export default async function DocumentsPage({
   searchParams,
@@ -75,6 +76,8 @@ export default async function DocumentsPage({
         title="Dokumen"
         description="Simpan apa saja, susun sesukamu. Semua tersimpan di Google Drive tim."
       />
+
+      <DocumentTabs active="/documents" />
 
       <FileBrowser
         currentFolder={currentFolder}

@@ -55,6 +55,21 @@ export async function linkFolderPath(link: DocumentLink): Promise<string[]> {
     );
   }
 
+  // Tagihan ikut kliennya, bukan folder "Keuangan" sendiri: invoice
+  // termin ketiga lebih berguna berada di folder klien yang sama dengan
+  // kontrak dan berita acaranya.
+  if (link.incomeId && !link.projectId && !link.clientId) {
+    const { data } = await supabase
+      .from("incomes")
+      .select("client:clients(name), project:projects(name)")
+      .eq("id", link.incomeId)
+      .single();
+
+    const client = data?.client as unknown as { name: string } | null;
+    const project = data?.project as unknown as { name: string } | null;
+    if (client?.name) return clientFolderPath(client.name, project?.name);
+  }
+
   if (link.projectId) {
     const { data } = await supabase
       .from("projects")
@@ -212,6 +227,7 @@ export async function targetColumns(target: UploadTarget) {
     project_id: target.link.projectId ?? null,
     task_id: target.link.taskId ?? null,
     expense_id: target.link.expenseId ?? null,
+    income_id: target.link.incomeId ?? null,
     note_id: target.link.noteId ?? null,
     event_id: target.link.eventId ?? null,
     folder_id: await ensureAppFolder(await linkFolderPath(target.link)),

@@ -63,6 +63,7 @@ export async function createClientRecord(
       contact_person: text(formData, "contact_person"),
       email: text(formData, "email"),
       phone: text(formData, "phone"),
+      address: text(formData, "address"),
       status: (text(formData, "status") ?? "lead") as ClientStatus,
       notes: text(formData, "notes"),
       created_by: user.id,
@@ -108,6 +109,7 @@ export async function updateClientRecord(
       contact_person: text(formData, "contact_person"),
       email: text(formData, "email"),
       phone: text(formData, "phone"),
+      address: text(formData, "address"),
       status: (text(formData, "status") ?? "lead") as ClientStatus,
       notes: text(formData, "notes"),
     })

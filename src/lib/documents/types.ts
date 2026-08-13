@@ -11,9 +11,25 @@ export type DocumentLink = {
   projectId?: string | null;
   taskId?: string | null;
   expenseId?: string | null;
+  /** Satu baris tagihan/pemasukan — dipakai invoice per termin. */
+  incomeId?: string | null;
   noteId?: string | null;
   eventId?: string | null;
 };
+
+/**
+ * Dokumen native Google Docs.
+ *
+ * Bedanya nyata, bukan cuma soal ikon: file seperti ini tidak punya byte
+ * yang bisa diunduh apa adanya, jadi pratinjau lewat proxy
+ * `/api/documents/[id]/download` yang dipakai file lain tidak berlaku —
+ * yang benar mengarahkan orang ke editor aslinya di docs.google.com.
+ */
+export const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
+
+export function isGoogleDoc(mimeType: string | null | undefined) {
+  return mimeType === GOOGLE_DOC_MIME;
+}
 
 /** Sasaran unggahan: sebuah folder di penjelajah berkas, atau sebuah entitas. */
 export type UploadTarget =

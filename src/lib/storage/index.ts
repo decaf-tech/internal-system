@@ -1,12 +1,13 @@
 import "server-only";
 
 import { GoogleDriveProvider } from "./google-drive";
-import type { StorageProvider } from "./types";
+import type { StorageProvider, TemplateDocProvider } from "./types";
 
 export type {
   StorageProvider,
   StorageQuota,
   StoredFile,
+  TemplateDocProvider,
   UploadInput,
 } from "./types";
 
@@ -20,6 +21,23 @@ let cached: StorageProvider | null = null;
 export function getStorage(): StorageProvider {
   cached ??= new GoogleDriveProvider();
   return cached;
+}
+
+/**
+ * Provider yang sedang dipakai, KALAU ia juga bisa mengurus dokumen dari
+ * template (salin → isi placeholder → ekspor PDF).
+ *
+ * `null` berarti penyimpanannya cuma gudang byte — dan itu jawaban yang
+ * sah, bukan kesalahan konfigurasi. Pemanggilnya menyembunyikan tombol
+ * "Dari Template", bukan menampilkan pesan error. Begitu suatu saat
+ * provider di atas diganti S3, seluruh fitur ini padam sendiri dengan
+ * rapi alih-alih meledak saat tombolnya diklik.
+ */
+export function getTemplateDocs(): TemplateDocProvider | null {
+  const provider = getStorage();
+  return "fillPlaceholders" in provider
+    ? (provider as unknown as TemplateDocProvider)
+    : null;
 }
 
 /** Folder tujuan dokumen milik seorang klien (opsional per project). */

@@ -95,6 +95,23 @@ export function ClientForm({
       </div>
 
       <div>
+        <label className="label" htmlFor="address">
+          Alamat
+        </label>
+        <textarea
+          id="address"
+          name="address"
+          rows={2}
+          defaultValue={initial?.address ?? ""}
+          className="field resize-y"
+          placeholder="Jl. Pajajaran No. 12, Bogor"
+        />
+        <p className="mt-1 text-xs text-ink-subtle">
+          Dipakai di blok “ditagihkan kepada” dokumen dari template.
+        </p>
+      </div>
+
+      <div>
         <label className="label" htmlFor="status">
           Status
         </label>
