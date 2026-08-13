@@ -6,6 +6,11 @@ import { IncomeStatusBadge } from "@/components/badge";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { todayKey } from "@/lib/date-range";
 import {
+  BILLING_PERIOD_UNIT,
+  contractValue,
+  isSubscription,
+} from "@/lib/billing";
+import {
   INCOME_CATEGORY_LABEL,
   INCOME_STATUS_LABEL,
   INCOME_STATUS_ORDER,
@@ -24,7 +29,18 @@ import {
 
 export type IncomeFormOptions = {
   clients: { id: string; name: string }[];
-  projects: Pick<Project, "id" | "name" | "client_id" | "deal_value">[];
+  projects: Pick<
+    Project,
+    | "id"
+    | "name"
+    | "client_id"
+    | "deal_value"
+    // Skema nilainya ikut: tanpa ketiganya, "Nilai deal" di bawah pemilih
+    // project menampilkan harga satu bulan sebagai kalau itu nilai dealnya.
+    | "billing_type"
+    | "billing_period"
+    | "contract_months"
+  >[];
 };
 
 export function NewIncomeButton({
@@ -210,8 +226,22 @@ function IncomeForm({
             ))}
           </select>
           {selectedProject?.deal_value != null && (
+            // Untuk langganan, `deal_value` cuma harga satu periode — yang
+            // ditampilkan nilai penuh kontraknya, dengan harga per periodenya
+            // sebagai keterangan (itu yang biasanya jadi jumlah tagihan ini).
             <p className="mt-1 font-mono text-xs text-ink-subtle">
-              Nilai deal {formatRupiah(Number(selectedProject.deal_value))}
+              Nilai deal{" "}
+              {formatRupiah(
+                contractValue(selectedProject, selectedProject.deal_value) ?? 0,
+              )}
+              {isSubscription(selectedProject) &&
+                selectedProject.billing_period && (
+                  <>
+                    {" · "}
+                    {formatRupiah(Number(selectedProject.deal_value))}/
+                    {BILLING_PERIOD_UNIT[selectedProject.billing_period]}
+                  </>
+                )}
             </p>
           )}
         </div>

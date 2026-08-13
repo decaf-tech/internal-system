@@ -33,11 +33,13 @@ export default function FinanceLoading() {
       <FinanceTabs active="/finance" />
 
       <SkeletonStatGrid
+        className="grid-cols-2 xl:grid-cols-5"
         labels={[
           "Kas Masuk Bulan Ini",
           "Kas Keluar Bulan Ini",
           "Selisih Bulan Ini",
           "Belum Diterima",
+          "Pendapatan Berulang",
         ]}
       />
 

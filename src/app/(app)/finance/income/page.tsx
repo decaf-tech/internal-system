@@ -29,7 +29,9 @@ export default async function IncomePage() {
     supabase.from("clients").select("id, name").order("name"),
     supabase
       .from("projects")
-      .select("id, name, client_id, deal_value")
+      .select(
+        "id, name, client_id, deal_value, billing_type, billing_period, contract_months",
+      )
       .order("name"),
   ]);
 

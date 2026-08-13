@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { SubmitButton } from "@/components/modal";
+import { BillingSchemeFields } from "@/components/billing-fields";
 import {
   PROSPECT_OPEN_STAGES,
   PROSPECT_STAGE_LABEL,
@@ -142,45 +143,29 @@ export function ProspectForm({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="label" htmlFor="estimated_value">
-            Nilai Estimasi
-          </label>
-          <input
-            id="estimated_value"
-            name="estimated_value"
-            // `text`, bukan `number`: angkanya diketik dengan titik ribuan
-            // ala Indonesia ("5.000.000"), dan `parseRupiah` di server yang
-            // membacanya. Input number malah menolak titik itu.
-            inputMode="numeric"
-            // Ditulis balik dengan titik ribuan, bukan "12500000" mentah:
-            // yang membuka form ini sedang membaca angkanya, dan deretan
-            // digit tanpa pemisah harus dihitung dengan jari.
-            defaultValue={
-              initial?.estimated_value != null
-                ? initial.estimated_value.toLocaleString("id-ID")
-                : ""
-            }
-            className="field"
-            placeholder="5.000.000"
-          />
-          <p className="mt-1 text-xs text-ink-subtle">
-            Boleh dikosongkan kalau angkanya belum jelas.
-          </p>
-        </div>
-        <div>
-          <label className="label" htmlFor="next_follow_up_date">
-            Follow-up Berikutnya
-          </label>
-          <input
-            id="next_follow_up_date"
-            name="next_follow_up_date"
-            type="date"
-            defaultValue={initial?.next_follow_up_date ?? ""}
-            className="field"
-          />
-        </div>
+      <BillingSchemeFields
+        amountName="estimated_value"
+        amountLabel="Nilai Estimasi"
+        amountHint="Boleh dikosongkan kalau angkanya belum jelas."
+        initial={{
+          amount: initial?.estimated_value ?? null,
+          billing_type: initial?.billing_type ?? null,
+          billing_period: initial?.billing_period ?? null,
+          contract_months: initial?.contract_months ?? null,
+        }}
+      />
+
+      <div>
+        <label className="label" htmlFor="next_follow_up_date">
+          Follow-up Berikutnya
+        </label>
+        <input
+          id="next_follow_up_date"
+          name="next_follow_up_date"
+          type="date"
+          defaultValue={initial?.next_follow_up_date ?? ""}
+          className="field"
+        />
       </div>
 
       <div>

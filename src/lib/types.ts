@@ -1,6 +1,8 @@
 // Tipe data yang mencerminkan supabase/schema.sql.
 // Kalau skema SQL berubah, file ini ikut diubah.
 
+import type { BillingPeriod, BillingType } from "./billing";
+
 export type UserRole = "founder" | "coo" | "admin";
 
 export type ClientStatus =
@@ -86,10 +88,23 @@ export type Project = {
   description: string | null;
   status: ProjectStatus;
   track: ProjectTrack;
+  /** Untuk project langganan, ini tanggal kontraknya mulai berjalan —
+   *  dasar hitungan jadwal tagihan & tanggal berakhirnya (migration 010). */
   start_date: string | null;
   target_date: string | null;
-  /** Nilai deal yang disepakati. Null = belum ada angka yang dipegang. */
+  /**
+   * Nilai deal yang disepakati. Null = belum ada angka yang dipegang.
+   *
+   * SATUANNYA IKUT `billing_type`: nilai seluruh deal untuk sekali bayar,
+   * nilai SATU periode tagih untuk langganan. Jangan dibaca mentah — pakai
+   * `contractValue()` di `lib/billing.ts` untuk nilai penuh kontraknya.
+   */
   deal_value: number | null;
+  billing_type: BillingType;
+  /** Terisi hanya saat `billing_type = 'subscription'` (dijaga constraint). */
+  billing_period: BillingPeriod | null;
+  /** Durasi kontrak dalam bulan; hanya untuk langganan. */
+  contract_months: number | null;
   drive_folder_id: string | null;
   created_at: string;
   updated_at: string;
@@ -109,9 +124,12 @@ export type ProspectStage =
   | "kalah";
 
 /**
- * Calon klien. Tabel sendiri, BUKAN kolom status di `clients` — begitu
- * prospek yang kalah numpuk di sana, setiap pemilih klien di seluruh
- * aplikasi ikut kotor (PRD v3.0 §2.1).
+ * Calon klien. Tabel sendiri, terpisah dari `clients` — riwayat tahapannya
+ * (follow-up, alasan batal, dst) tidak punya tempat di baris `clients`.
+ * Tapi setiap prospek SELALU punya baris `clients` yang menyertainya sejak
+ * dibuat (lewat `client_id`, lihat `stageToClientStatus` di
+ * `prospect-actions.ts`) — supaya prospek yang masih berjalan pun bisa
+ * ditaut ke tugas & kalender, bukan cuma yang sudah menang.
  */
 export type Prospect = {
   id: string;
@@ -120,13 +138,24 @@ export type Prospect = {
   contact_phone: string | null;
   contact_email: string | null;
   stage: ProspectStage;
-  /** Opsional — prospek awal yang nilainya belum jelas tetap mudah dicatat. */
+  /**
+   * Opsional — prospek awal yang nilainya belum jelas tetap mudah dicatat.
+   *
+   * Satuannya ikut `billing_type`, sama seperti `Project.deal_value`:
+   * nilai seluruh deal untuk sekali bayar, nilai satu periode tagih untuk
+   * langganan. Nilai pipeline dihitung lewat `contractValue()`.
+   */
   estimated_value: number | null;
+  billing_type: BillingType;
+  /** Terisi hanya saat `billing_type = 'subscription'` (dijaga constraint). */
+  billing_period: BillingPeriod | null;
+  /** Durasi kontrak dalam bulan; hanya untuk langganan. */
+  contract_months: number | null;
   next_follow_up_date: string | null;
   /** Wajib saat stage 'kalah', divalidasi di server action bukan database. */
   lost_reason: string | null;
   owner_id: string | null;
-  /** Terisi saat konversi menang; barisnya sendiri tetap jadi riwayat. */
+  /** Klien yang menyertai prospek ini sejak dibuat — lihat komentar di atas. */
   client_id: string | null;
   created_by: string | null;
   created_at: string;
@@ -268,7 +297,7 @@ export type TaskWithRelations = Task & {
 
 export type ProspectWithRelations = Prospect & {
   owner: Member | null;
-  /** Terisi cuma untuk prospek yang sudah dikonversi jadi klien. */
+  /** Selalu terisi — lihat komentar `client_id` di atas. */
   client: Pick<Client, "id" | "name"> | null;
 };
 
@@ -601,11 +630,16 @@ export const INCOME_STATUS_ORDER: IncomeStatus[] = [
   "received",
 ];
 
+// `retainer` dipakai ulang untuk tagihan langganan yang diterbitkan
+// `generateSubscriptionIncomes` — keduanya "uang yang datang berulang dengan
+// jumlah tetap", jadi menambah nilai enum baru cuma memecah satu hal jadi dua
+// yang harus dijumlahkan bersama di mana-mana. Labelnya yang menyebut
+// keduanya (migration 010).
 export const INCOME_CATEGORY_LABEL: Record<IncomeCategory, string> = {
   dp: "DP",
   termin: "Termin",
   pelunasan: "Pelunasan",
-  retainer: "Retainer",
+  retainer: "Langganan / Retainer",
   other: "Lainnya",
 };
 

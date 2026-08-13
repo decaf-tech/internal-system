@@ -78,7 +78,7 @@ export function TaskForm({
   // datanya hilang.
   const [showDetail, setShowDetail] = useState(
     Boolean(
-      initial?.description || initial?.client_id || initial?.priority === "urgent",
+      initial?.description || initial?.project_id || initial?.priority === "urgent",
     ),
   );
 
@@ -109,6 +109,32 @@ export function TaskForm({
           className="field"
           placeholder="Kirim proposal revisi ke klien"
         />
+      </div>
+
+      {/* Di lapis pertama, bukan balik "Detail lainnya" — kalau ditautkan
+          ke klien cuma kelihatan setelah tombol itu dibuka, orang yang buru-
+          buru mencatat tugas cenderung lewat begitu saja, dan tugas itu
+          tidak pernah muncul di halaman klien terkait. Klien di sini
+          termasuk yang masih di tahap prospek — setiap prospek sekarang
+          otomatis punya baris klien sejak dibuat. */}
+      <div>
+        <label className="label" htmlFor="client_id">
+          Klien
+        </label>
+        <select
+          id="client_id"
+          name="client_id"
+          value={clientId}
+          onChange={(event) => setClientId(event.target.value)}
+          className="field"
+        >
+          <option value="">— Internal —</option>
+          {options.clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
@@ -208,49 +234,40 @@ export function TaskForm({
               </select>
             </div>
             <div>
-              <label className="label" htmlFor="client_id">
-                Klien
+              <label className="label" htmlFor="project_id">
+                Project
               </label>
               <select
-                id="client_id"
-                name="client_id"
-                value={clientId}
-                onChange={(event) => setClientId(event.target.value)}
+                id="project_id"
+                name="project_id"
+                defaultValue={initial?.project_id ?? ""}
                 className="field"
+                disabled={projectChoices.length === 0}
               >
-                <option value="">— Internal —</option>
-                {options.clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.name}
+                <option value="">
+                  {clientId ? "— Tanpa project —" : "— Pilih klien dulu —"}
+                </option>
+                {projectChoices.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
                   </option>
                 ))}
               </select>
             </div>
           </div>
-
-          <div>
-            <label className="label" htmlFor="project_id">
-              Project
-            </label>
-            <select
-              id="project_id"
-              name="project_id"
-              defaultValue={initial?.project_id ?? ""}
-              className="field"
-              disabled={projectChoices.length === 0}
-            >
-              <option value="">
-                {clientId ? "— Tanpa project —" : "— Pilih klien dulu —"}
-              </option>
-              {projectChoices.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
+
+      {/* Catatan & lampiran menempel lewat `task_id` — kolom yang cuma ada
+          setelah baris tugasnya sendiri tersimpan. Tugas baru belum bisa
+          menawarkan keduanya sama sekali, jadi orang yang menyimpannya
+          perlu tahu itu langkah berikutnya, bukan sesuatu yang terlewat. */}
+      {!initial && (
+        <p className="text-xs text-ink-subtle">
+          Catatan & lampiran bisa ditambahkan setelah tugas ini disimpan —
+          buka lagi dari papan atau kalender.
+        </p>
+      )}
 
       {state.error && (
         <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">

@@ -1,10 +1,15 @@
-import { formatRupiah, todayJakarta } from "@/lib/format";
+import { formatRupiah, formatRupiahShort, todayJakarta } from "@/lib/format";
+import { contractValueOrZero, monthlyValue } from "@/lib/billing";
 import { PROSPECT_OPEN_STAGES } from "@/lib/types";
+import type { BillingScheme } from "@/lib/billing";
 import type { createClient } from "@/lib/supabase/server";
 
 export type ClientStats = {
   openProspects: number;
+  /** Nilai PENUH kontrak, bukan nilai satu periode — lihat `contractValue`. */
   pipelineValue: number;
+  /** Bagian pipeline yang berulang tiap bulan, disetarakan (MRR calon). */
+  pipelineMonthly: number;
   followUpsDue: number;
   activeClients: number;
   totalClients: number;
@@ -29,9 +34,12 @@ export async function loadClientStats(
     // Nilainya ikut ditarik, bukan dihitung lewat agregat PostgREST:
     // dua angka pertama lahir dari satu query yang sama, dan jumlah baris
     // di tabel ini dihitung dalam ratusan, bukan ratusan ribu.
+    // Tiga kolom skema ikut ditarik: untuk langganan, `estimated_value` cuma
+    // nilai satu periode, dan menjumlahkannya apa adanya membuat pipeline
+    // terlihat sekecil satu tagihan bulanan (migration 010).
     supabase
       .from("prospects")
-      .select("estimated_value")
+      .select("estimated_value, billing_type, billing_period, contract_months")
       .in("stage", PROSPECT_OPEN_STAGES),
     supabase
       .from("prospects")
@@ -41,13 +49,19 @@ export async function loadClientStats(
     supabase.from("clients").select("status"),
   ]);
 
-  const open = openResult.data ?? [];
+  const open = (openResult.data ?? []) as (BillingScheme & {
+    estimated_value: number | null;
+  })[];
   const clients = clientsResult.data ?? [];
 
   return {
     openProspects: open.length,
     pipelineValue: open.reduce(
-      (sum, row) => sum + Number(row.estimated_value ?? 0),
+      (sum, row) => sum + contractValueOrZero(row, row.estimated_value),
+      0,
+    ),
+    pipelineMonthly: open.reduce(
+      (sum, row) => sum + monthlyValue(row, row.estimated_value),
       0,
     ),
     followUpsDue: dueResult.count ?? 0,
@@ -77,7 +91,14 @@ export function ClientStatStrip({ stats }: { stats: ClientStats }) {
         label={CLIENT_STAT_LABELS[1]}
         value={formatRupiah(stats.pipelineValue)}
         tone="ink"
-        hint="nilai yang masih berjalan"
+        // Bagian langganan disebut terpisah karena dua pipeline dengan total
+        // yang sama tidak sama artinya: yang satu selesai begitu dibayar,
+        // yang satu jadi pemasukan yang datang lagi tiap bulan.
+        hint={
+          stats.pipelineMonthly > 0
+            ? `nilai penuh kontrak · ${formatRupiahShort(stats.pipelineMonthly)}/bln berulang`
+            : "nilai yang masih berjalan"
+        }
       />
       <Stat
         label={CLIENT_STAT_LABELS[2]}

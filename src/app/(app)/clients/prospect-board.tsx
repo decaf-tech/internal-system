@@ -355,6 +355,9 @@ export function ProspectBoard({
 
       <WinProspectDialog
         prospect={closing?.stage === "menang" ? closingProspect : null}
+        // Tanggal Jakarta dari server, sama seperti sorotan follow-up di
+        // kartu: prasetel "mulai kontrak" tidak boleh ikut jam browser.
+        today={today}
         onClose={closeGate}
         onDone={() => {
           setClosing(null);

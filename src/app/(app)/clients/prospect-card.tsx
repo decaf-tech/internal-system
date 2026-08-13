@@ -5,7 +5,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { parseKey } from "@/lib/date-range";
-import { formatRupiahShort } from "@/lib/format";
+import { formatRupiah, formatRupiahShort } from "@/lib/format";
+import {
+  BILLING_PERIOD_UNIT,
+  contractValue,
+  isSubscription,
+} from "@/lib/billing";
 import type { ProspectWithRelations } from "@/lib/types";
 import { MemberAvatar } from "@/components/member-avatar";
 
@@ -54,6 +59,9 @@ export function ProspectCardBody({
   // atau kalah tidak menuntut apa-apa lagi.
   const closed = prospect.stage === "menang" || prospect.stage === "kalah";
 
+  const subscription = isSubscription(prospect);
+  const value = contractValue(prospect, prospect.estimated_value);
+
   return (
     <div className="space-y-1.5">
       <div className="flex items-start justify-between gap-1.5">
@@ -74,9 +82,28 @@ export function ProspectCardBody({
       )}
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-ink-muted/80">
-        {prospect.estimated_value !== null && (
-          <span className="text-ink-muted">
-            {formatRupiahShort(prospect.estimated_value)}
+        {value !== null && (
+          <span
+            className="text-ink-muted"
+            // Yang tergambar di kartu adalah nilai PENUH kontrak, bukan angka
+            // yang diketik — kalau tidak, langganan Rp300rb/bulan selama
+            // setahun berdiri sejajar dengan proyek Rp300rb sekali jadi.
+            // Rinciannya menyusul di judul & penanda "↻" di sebelahnya.
+            title={
+              subscription
+                ? `${formatRupiah(prospect.estimated_value ?? 0)} per ${
+                    BILLING_PERIOD_UNIT[prospect.billing_period!]
+                  } × ${prospect.contract_months} bulan`
+                : undefined
+            }
+          >
+            {formatRupiahShort(value)}
+            {subscription && (
+              <span className="text-ink-subtle">
+                {" "}
+                ↻{prospect.contract_months}b
+              </span>
+            )}
           </span>
         )}
         {followUp && (
@@ -90,7 +117,10 @@ export function ProspectCardBody({
             {format(parseKey(followUp), "d MMM", { locale: localeId })}
           </span>
         )}
-        {prospect.client && (
+        {/* Sebelum Menang, `client` cuma mengulang nama prospek ini sendiri
+            (lihat komentar `client_id` di lib/types.ts) — tidak informatif
+            untuk ditampilkan di kartu. */}
+        {prospect.stage === "menang" && prospect.client && (
           <span className="truncate text-forest">→ {prospect.client.name}</span>
         )}
       </div>

@@ -3,8 +3,19 @@
 import { useActionState, useCallback, useEffect, useState, useTransition } from "react";
 import { ConfirmButton, Modal, SubmitButton } from "@/components/modal";
 import { ProjectStatusBadge } from "@/components/badge";
+import { BillingSchemeFields } from "@/components/billing-fields";
 import { DocumentPanel } from "@/components/document-panel";
 import { formatDate, formatRupiah } from "@/lib/format";
+import {
+  BILLING_PERIOD_UNIT,
+  CONTRACT_RENEWAL_WARNING_DAYS,
+  billingSchedule,
+  contractDaysLeft,
+  contractEndDate,
+  contractValue,
+  isSubscription,
+  periodCount,
+} from "@/lib/billing";
 import {
   PROJECT_STATUS_LABEL,
   PROJECT_TRACK_LABEL,
@@ -15,23 +26,47 @@ import {
 import {
   createProject,
   deleteProject,
+  generateSubscriptionIncomes,
   updateProjectDeal,
   updateProjectStatus,
   type FormState,
 } from "../actions";
 
+/**
+ * Uang sebuah project, sudah diringkas di server.
+ *
+ * Tanggal jatuh tempo ikut dibawa, bukan cuma rupiahnya: untuk langganan,
+ * "periode mana yang tagihannya belum terbit" adalah pertanyaan yang berbeda
+ * dari "sudah masuk berapa rupiah", dan keduanya perlu terjawab di tempat
+ * yang sama supaya periode yang terlewat tidak diam-diam hilang.
+ *
+ * Yang disimpan tanggalnya, bukan sekadar jumlah barisnya: satu project
+ * langganan bisa juga punya pemasukan lain (DP, biaya setup), dan menghitung
+ * semua baris akan membuat periode yang belum tertagih terlihat sudah
+ * tertagih. Tanggal jatuh tempo adalah identitas periode — kunci yang sama
+ * yang dipakai `generateSubscriptionIncomes` untuk melewati yang sudah ada.
+ */
+export type ProjectMoney = {
+  received: number;
+  dueDates: string[];
+};
+
+const NO_MONEY: ProjectMoney = { received: 0, dueDates: [] };
+
 export function ProjectSection({
   clientId,
   projects,
-  receivedByProject,
+  moneyByProject,
   documents,
+  today,
 }: {
   clientId: string;
   projects: Project[];
-  /** Total pemasukan berstatus "diterima" per project, dalam rupiah. */
-  receivedByProject: Record<string, number>;
+  moneyByProject: Record<string, ProjectMoney>;
   /** Seluruh dokumen klien ini; disaring per project di tiap barisnya. */
   documents: Document[];
+  /** Tanggal Jakarta dari server — dasar hitungan sisa kontrak. */
+  today: string;
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -60,7 +95,8 @@ export function ProjectSection({
               key={project.id}
               project={project}
               clientId={clientId}
-              received={receivedByProject[project.id] ?? 0}
+              money={moneyByProject[project.id] ?? NO_MONEY}
+              today={today}
               documents={documents.filter(
                 (doc) => doc.project_id === project.id,
               )}
@@ -70,7 +106,7 @@ export function ProjectSection({
       )}
 
       <Modal open={open} onClose={close} title="Project Baru">
-        <ProjectForm clientId={clientId} onDone={close} />
+        <ProjectForm clientId={clientId} today={today} onDone={close} />
       </Modal>
     </section>
   );
@@ -79,13 +115,15 @@ export function ProjectSection({
 function ProjectRow({
   project,
   clientId,
-  received,
+  money,
   documents,
+  today,
 }: {
   project: Project;
   clientId: string;
-  received: number;
+  money: ProjectMoney;
   documents: Document[];
+  today: string;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -128,7 +166,12 @@ function ProjectRow({
         </div>
       </div>
 
-      <DealRow project={project} clientId={clientId} received={received} />
+      <DealBlock
+        project={project}
+        clientId={clientId}
+        money={money}
+        today={today}
+      />
 
       <select
         value={project.status}
@@ -167,133 +210,316 @@ function ProjectRow({
 }
 
 /**
- * Baris uang sebuah project: nilai deal, berapa yang sudah masuk, sisanya.
+ * Baris uang sebuah project: nilai deal, berapa yang sudah masuk, sisanya —
+ * dan untuk langganan, sekalian jendela kontraknya.
  *
- * Nilainya bisa diubah di tempat karena angka deal paling sering berubah
- * saat sedang menatap halaman kliennya — membuka form project penuh untuk
- * mengubah satu angka adalah alasan bagus untuk menunda, lalu lupa.
+ * Angkanya bisa diubah dari sini karena nilai deal paling sering berubah saat
+ * sedang menatap halaman kliennya; membuka form project penuh untuk itu adalah
+ * alasan bagus untuk menunda, lalu lupa. Yang dibuka sekarang modal kecil
+ * (bukan lagi isian di tempat) karena satu angka tidak lagi cukup sejak ada
+ * skema langganan — nilai per periode tanpa periode & durasinya tidak berarti
+ * apa-apa.
  */
-function DealRow({
+function DealBlock({
   project,
   clientId,
-  received,
+  money,
+  today,
 }: {
   project: Project;
   clientId: string;
-  received: number;
+  money: ProjectMoney;
+  today: string;
 }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(
-    project.deal_value == null ? "" : String(project.deal_value),
+  const close = useCallback(() => setEditing(false), []);
+
+  const subscription = isSubscription(project);
+  const total = contractValue(project, project.deal_value);
+
+  const editButton = (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="text-accent hover:underline"
+    >
+      ubah
+    </button>
   );
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
 
-  function save() {
-    startTransition(async () => {
-      const result = await updateProjectDeal(project.id, clientId, value);
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-      setError(null);
-      setEditing(false);
-    });
-  }
+  const dialog = (
+    <Modal
+      open={editing}
+      onClose={close}
+      title={`Nilai Deal — ${project.name}`}
+    >
+      <DealForm project={project} clientId={clientId} today={today} onDone={close} />
+    </Modal>
+  );
 
-  if (editing) {
+  if (total == null) {
     return (
-      <div className="mt-2">
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono text-xs text-ink-subtle">Rp</span>
-          <input
-            autoFocus
-            value={value}
-            inputMode="numeric"
-            onChange={(event) => setValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                save();
-              }
-              if (event.key === "Escape") setEditing(false);
-            }}
-            placeholder="10.000.000"
-            className="field w-40 py-1 text-base sm:text-xs"
-          />
-          <button
-            type="button"
-            onClick={save}
-            disabled={pending}
-            className="rounded bg-ink px-2 py-1 text-[11px] text-ink-inverse disabled:opacity-40"
-          >
-            {pending ? "…" : "Simpan"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="px-1 text-[11px] text-ink-muted hover:text-ink"
-          >
-            Batal
-          </button>
-        </div>
-        {error && <p className="mt-1 text-[11px] text-danger">{error}</p>}
-      </div>
+      <>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="mt-2 text-xs text-accent hover:underline"
+        >
+          + Isi nilai deal
+        </button>
+        {dialog}
+      </>
     );
   }
 
-  if (project.deal_value == null) {
-    return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="mt-2 text-xs text-accent hover:underline"
-      >
-        + Isi nilai deal
-      </button>
-    );
-  }
-
-  const deal = Number(project.deal_value);
-  const percent = deal > 0 ? Math.min(100, (received / deal) * 100) : 0;
+  const percent = total > 0 ? Math.min(100, (money.received / total) * 100) : 0;
 
   return (
     <div className="mt-2">
       <div className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px]">
-        <span className="text-ink">{formatRupiah(deal)}</span>
+        <span className="text-ink">{formatRupiah(total)}</span>
+        {subscription && project.billing_period && (
+          // Nilai penuh kontrak yang jadi angka utama, dan harga per periode
+          // yang jadi keterangannya — bukan sebaliknya. Yang ditanyakan saat
+          // membaca daftar project adalah "deal ini besarnya berapa".
+          <span className="text-ink-subtle">
+            {formatRupiah(Number(project.deal_value ?? 0))}/
+            {BILLING_PERIOD_UNIT[project.billing_period]} × {periodCount(project)}
+          </span>
+        )}
         <span className="text-ink-subtle">
-          masuk {formatRupiah(received)}
-          {received < deal && ` · sisa ${formatRupiah(deal - received)}`}
+          masuk {formatRupiah(money.received)}
+          {money.received < total &&
+            ` · sisa ${formatRupiah(total - money.received)}`}
         </span>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="text-accent hover:underline"
-        >
-          ubah
-        </button>
+        {editButton}
       </div>
+
       <div className="mt-1 h-1 overflow-hidden rounded-full bg-surface-sunken">
         <div
           className="h-full rounded-full bg-forest"
           style={{ width: `${percent}%` }}
         />
       </div>
+
+      {subscription && (
+        <ContractStatus
+          project={project}
+          clientId={clientId}
+          money={money}
+          today={today}
+        />
+      )}
+
+      {dialog}
     </div>
+  );
+}
+
+/**
+ * Jendela kontrak langganan: kapan mulai, kapan habis, berapa lama lagi, dan
+ * berapa periode yang tagihannya belum diterbitkan.
+ *
+ * Dua hal yang cuma ada di langganan dan tidak punya tempat di baris deal
+ * biasa. Yang pertama karena langganan berakhir sendiri — tanpa peringatan,
+ * kontrak habis diketahui saat kliennya berhenti membayar. Yang kedua karena
+ * tagihan yang tidak pernah diterbitkan tidak muncul di mana pun: tidak di
+ * "Belum Diterima", tidak di daftar lewat jatuh tempo.
+ */
+function ContractStatus({
+  project,
+  clientId,
+  money,
+  today,
+}: {
+  project: Project;
+  clientId: string;
+  money: ProjectMoney;
+  today: string;
+}) {
+  const endDate = contractEndDate(project.start_date, project);
+  const daysLeft = contractDaysLeft(endDate, today);
+
+  // Jadwalnya dihitung ulang di sini dengan rumus yang sama yang dipakai
+  // server, dan dicocokkan dengan kunci yang sama (tanggal jatuh tempo) —
+  // jadi angka di layar dan jumlah yang akan benar-benar terbit tidak bisa
+  // berbeda.
+  const schedule = project.start_date
+    ? billingSchedule(project.start_date, project)
+    : [];
+  const taken = new Set(money.dueDates);
+  const issued = schedule.filter((item) => taken.has(item.dueDate)).length;
+  const missing = schedule.length - issued;
+
+  const expiring =
+    daysLeft !== null &&
+    daysLeft >= 0 &&
+    daysLeft <= CONTRACT_RENEWAL_WARNING_DAYS;
+  const expired = daysLeft !== null && daysLeft < 0;
+
+  return (
+    <div className="mt-1.5 space-y-1 font-mono text-[10px] text-ink-subtle">
+      {project.start_date && endDate ? (
+        <p className={expired || expiring ? "text-danger" : undefined}>
+          Kontrak {formatDate(project.start_date)} – {formatDate(endDate)}
+          {daysLeft !== null && (
+            <>
+              {" · "}
+              {expired
+                ? `berakhir ${Math.abs(daysLeft)} hari lalu`
+                : daysLeft === 0
+                  ? "berakhir hari ini"
+                  : `sisa ${daysLeft} hari`}
+            </>
+          )}
+        </p>
+      ) : (
+        <p className="text-danger">
+          Tanggal mulai kontrak belum diisi — jadwal tagihannya belum bisa
+          dihitung.
+        </p>
+      )}
+
+      <p>
+        {issued} dari {schedule.length || periodCount(project)} tagihan
+        langganan sudah tercatat
+      </p>
+
+      {missing > 0 && project.start_date && (
+        <GenerateInvoicesButton
+          projectId={project.id}
+          clientId={clientId}
+          missing={missing}
+        />
+      )}
+    </div>
+  );
+}
+
+function GenerateInvoicesButton({
+  projectId,
+  clientId,
+  missing,
+}: {
+  projectId: string;
+  clientId: string;
+  missing: number;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await generateSubscriptionIncomes(projectId, clientId);
+            setMessage(
+              result.error ??
+                (result.created === 0
+                  ? "Semua periode sudah punya tagihan."
+                  : `${result.created} tagihan diterbitkan.`),
+            );
+          })
+        }
+        className="rounded border border-line px-2 py-1 text-[10px] text-accent transition-colors hover:border-line-strong disabled:opacity-40"
+      >
+        {pending ? "Menerbitkan…" : `Terbitkan ${missing} tagihan langganan`}
+      </button>
+      {message && <p className="mt-1">{message}</p>}
+    </div>
+  );
+}
+
+function DealForm({
+  project,
+  clientId,
+  today,
+  onDone,
+}: {
+  project: Project;
+  clientId: string;
+  today: string;
+  onDone: () => void;
+}) {
+  const action = updateProjectDeal.bind(null, project.id, clientId);
+  const [state, formAction] = useActionState<FormState, FormData>(action, {
+    error: null,
+  });
+  const [subscription, setSubscription] = useState(isSubscription(project));
+
+  useEffect(() => {
+    if (state.ok) onDone();
+  }, [state, onDone]);
+
+  return (
+    <form action={formAction} className="space-y-4">
+      <BillingSchemeFields
+        amountName="deal_value"
+        amountLabel="Nilai Deal"
+        amountHint="Kosongkan kalau angkanya belum ada. Sisa tagihannya terhitung otomatis dari pemasukan yang ditautkan ke project ini."
+        initial={{
+          amount: project.deal_value,
+          billing_type: project.billing_type,
+          billing_period: project.billing_period,
+          contract_months: project.contract_months,
+        }}
+        onTypeChange={(type) => setSubscription(type === "subscription")}
+      />
+
+      {subscription && (
+        <div>
+          <label className="label" htmlFor="deal-start">
+            Mulai Kontrak <span className="text-accent">*</span>
+          </label>
+          <input
+            id="deal-start"
+            name="start_date"
+            type="date"
+            required
+            defaultValue={project.start_date ?? today}
+            className="field"
+          />
+          <p className="mt-1 text-xs text-ink-subtle">
+            Jadwal tagihan dan tanggal kontrak berakhir dihitung dari sini.
+            Mengubahnya tidak menghapus tagihan yang sudah terbit.
+          </p>
+        </div>
+      )}
+
+      {state.error && (
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+          {state.error}
+        </p>
+      )}
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button type="button" className="btn btn-ghost" onClick={onDone}>
+          Batal
+        </button>
+        <SubmitButton>Simpan</SubmitButton>
+      </div>
+    </form>
   );
 }
 
 function ProjectForm({
   clientId,
+  today,
   onDone,
 }: {
   clientId: string;
+  today: string;
   onDone: () => void;
 }) {
   const action = createProject.bind(null, clientId);
   const [state, formAction] = useActionState<FormState, FormData>(action, {
     error: null,
   });
+  const [subscription, setSubscription] = useState(false);
+  const [startDate, setStartDate] = useState("");
 
   useEffect(() => {
     if (state.ok) onDone();
@@ -363,32 +589,39 @@ function ProjectForm({
         </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="project-deal">
-          Nilai Deal (Rp)
-        </label>
-        <input
-          id="project-deal"
-          name="deal_value"
-          inputMode="numeric"
-          className="field"
-          placeholder="10.000.000"
-        />
-        <p className="mt-1 text-xs text-ink-subtle">
-          Boleh dikosongkan dulu. Kalau diisi, sisa tagihannya otomatis
-          terhitung dari pemasukan yang ditautkan ke project ini.
-        </p>
-      </div>
+      <BillingSchemeFields
+        amountName="deal_value"
+        amountLabel="Nilai Deal"
+        amountHint="Boleh dikosongkan dulu. Kalau diisi, sisa tagihannya otomatis terhitung dari pemasukan yang ditautkan ke project ini."
+        idPrefix="project-"
+        onTypeChange={(type) => {
+          setSubscription(type === "subscription");
+          // Prasetel hari ini saat skemanya jadi langganan, dan hanya kalau
+          // tanggalnya masih kosong — tanpa tanggal mulai, kontrak tidak
+          // punya jadwal tagihan maupun tanggal berakhir. Project sekali
+          // bayar tidak butuh keduanya, jadi tidak ditebak-tebak.
+          if (type === "subscription" && startDate === "") setStartDate(today);
+        }}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="project-start">
-            Mulai
+            {subscription ? (
+              <>
+                Mulai Kontrak <span className="text-accent">*</span>
+              </>
+            ) : (
+              "Mulai"
+            )}
           </label>
           <input
             id="project-start"
             name="start_date"
             type="date"
+            required={subscription}
+            value={startDate}
+            onChange={(event) => setStartDate(event.target.value)}
             className="field"
           />
         </div>

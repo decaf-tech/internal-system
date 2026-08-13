@@ -159,6 +159,19 @@ export function TaskWorkspace({
       <Modal open={editing !== null} onClose={closeEdit} title="Edit Tugas">
         {editing && (
           <>
+            {/* Formnya sendiri ditutup tombol Simpan di kakinya — tanpa
+                pintasan ini, Catatan & Lampiran di bawah cuma kelihatan
+                kalau orangnya kebetulan menggulir lebih jauh setelah itu. */}
+            <JumpToSectionBar
+              items={[
+                { targetId: "task-notes-section", label: "Catatan", count: editing.notes.length },
+                {
+                  targetId: "task-documents-section",
+                  label: "Lampiran",
+                  count: editing.documents.length,
+                },
+              ]}
+            />
             <TaskForm
               key={editing.id}
               action={updateTask.bind(null, editing.id)}
@@ -168,25 +181,29 @@ export function TaskWorkspace({
               options={options}
               onDone={closeEdit}
             />
-            <TaskNotes
-              taskId={editing.id}
-              taskTitle={editing.title}
-              notes={editing.notes}
-            />
-            <DocumentPanel
-              documents={editing.documents}
-              link={{
-                taskId: editing.id,
-                // Ikut dicatat supaya lampirannya mendarat di folder klien
-                // yang sama dengan dokumen lain milik klien itu, bukan di
-                // tumpukan "Umum".
-                clientId: editing.client_id,
-                projectId: editing.project_id,
-              }}
-              title="Lampiran"
-              variant="inline"
-              emptyLabel="Belum ada lampiran untuk tugas ini."
-            />
+            <div id="task-notes-section">
+              <TaskNotes
+                taskId={editing.id}
+                taskTitle={editing.title}
+                notes={editing.notes}
+              />
+            </div>
+            <div id="task-documents-section">
+              <DocumentPanel
+                documents={editing.documents}
+                link={{
+                  taskId: editing.id,
+                  // Ikut dicatat supaya lampirannya mendarat di folder klien
+                  // yang sama dengan dokumen lain milik klien itu, bukan di
+                  // tumpukan "Umum".
+                  clientId: editing.client_id,
+                  projectId: editing.project_id,
+                }}
+                title="Lampiran"
+                variant="inline"
+                emptyLabel="Belum ada lampiran untuk tugas ini."
+              />
+            </div>
             <div className="mt-4 border-t border-line pt-3">
               <DeleteTaskButton
                 taskId={editing.id}
@@ -289,5 +306,38 @@ function DeleteTaskButton({
     >
       {pending ? "Menghapus…" : "Hapus tugas ini"}
     </ConfirmButton>
+  );
+}
+
+/**
+ * Pintasan gulir ke bagian Catatan/Lampiran, dipasang di atas form modal
+ * Edit Tugas. Klik saja, bukan `<a href="#...">`: dialog bawaan browser
+ * tidak selalu ikut menggulir mulus lewat navigasi hash biasa, sementara
+ * `scrollIntoView` di kontainer modal (lihat `overflow-y-auto` di
+ * `modal.tsx`) selalu jalan.
+ */
+function JumpToSectionBar({
+  items,
+}: {
+  items: { targetId: string; label: string; count: number }[];
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      {items.map((item) => (
+        <button
+          key={item.targetId}
+          type="button"
+          onClick={() =>
+            document
+              .getElementById(item.targetId)
+              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+          className="rounded-full border border-line px-2.5 py-1 text-xs text-ink-muted transition-colors hover:border-line-strong hover:text-ink"
+        >
+          ↓ {item.label}
+          {item.count > 0 ? ` · ${item.count}` : ""}
+        </button>
+      ))}
+    </div>
   );
 }

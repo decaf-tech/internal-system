@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ClientStatusBadge, TaskStatusBadge } from "@/components/badge";
 import { DocumentPanel } from "@/components/document-panel";
-import { formatDate } from "@/lib/format";
+import { formatDate, todayJakarta } from "@/lib/format";
 import type { Client, Document, Project, Task } from "@/lib/types";
 import { EditClientButton } from "../client-dialogs";
 import { DeleteClientButton } from "./delete-client-button";
-import { ProjectSection } from "./project-section";
+import { ProjectSection, type ProjectMoney } from "./project-section";
 
 export default async function ClientDetailPage({
   params,
@@ -45,13 +45,15 @@ export default async function ClientDetailPage({
       .select("*")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
-    // Hanya yang uangnya benar-benar sudah diterima — ini yang dipakai
-    // menghitung sisa tagihan tiap project.
+    // Dulu hanya yang berstatus 'received' — cukup untuk menghitung sisa
+    // tagihan, tapi buta terhadap tagihan langganan yang belum diterbitkan.
+    // Status & jatuh temponya ikut ditarik sekarang: project langganan butuh
+    // dua jawaban, rupiah yang sudah masuk DAN periode mana yang tagihannya
+    // sudah ada (lihat `ProjectMoney`).
     supabase
       .from("incomes")
-      .select("project_id, amount")
-      .eq("client_id", id)
-      .eq("status", "received"),
+      .select("project_id, amount, status, due_date")
+      .eq("client_id", id),
   ]);
 
   if (!data) notFound();
@@ -59,11 +61,16 @@ export default async function ClientDetailPage({
 
   const allDocuments = (documents ?? []) as Document[];
 
-  const receivedByProject: Record<string, number> = {};
+  const moneyByProject: Record<string, ProjectMoney> = {};
   for (const row of incomes ?? []) {
     if (!row.project_id) continue;
-    receivedByProject[row.project_id] =
-      (receivedByProject[row.project_id] ?? 0) + Number(row.amount);
+
+    const entry = (moneyByProject[row.project_id] ??= {
+      received: 0,
+      dueDates: [],
+    });
+    entry.dueDates.push(String(row.due_date));
+    if (row.status === "received") entry.received += Number(row.amount);
   }
 
   return (
@@ -98,8 +105,9 @@ export default async function ClientDetailPage({
           <ProjectSection
             clientId={client.id}
             projects={(projects ?? []) as Project[]}
-            receivedByProject={receivedByProject}
+            moneyByProject={moneyByProject}
             documents={allDocuments}
+            today={todayJakarta()}
           />
 
           <section className="card p-4">

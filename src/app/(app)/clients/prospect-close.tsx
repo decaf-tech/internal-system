@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Modal, SubmitButton } from "@/components/modal";
+import { BillingSchemeFields } from "@/components/billing-fields";
 import { formatRupiah } from "@/lib/format";
 import type { ProspectWithRelations } from "@/lib/types";
 import {
@@ -128,10 +129,13 @@ function LoseForm({
  */
 export function WinProspectDialog({
   prospect,
+  today,
   onClose,
   onDone,
 }: {
   prospect: ProspectWithRelations | null;
+  /** Tanggal Jakarta dari server — prasetel tanggal mulai kontrak. */
+  today: string;
   onClose: () => void;
   /** Dipanggil hanya kalau tahapnya benar-benar berubah, bukan saat dibatalkan
    *  — papan memakainya untuk ikut menutup modal detail di belakangnya. */
@@ -143,6 +147,7 @@ export function WinProspectDialog({
         <WinForm
           key={prospect.id}
           prospect={prospect}
+          today={today}
           onClose={onClose}
           onDone={onDone}
         />
@@ -153,10 +158,12 @@ export function WinProspectDialog({
 
 function WinForm({
   prospect,
+  today,
   onClose,
   onDone,
 }: {
   prospect: ProspectWithRelations;
+  today: string;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -170,6 +177,13 @@ function WinForm({
   // tanpa itu angka yang sudah diketik di prospek tidak ke mana-mana.
   const [withProject, setWithProject] = useState(true);
 
+  // Dipantau di sini, bukan cuma di dalam `BillingSchemeFields`: tanggal
+  // mulai kontrak di bawah wajib untuk langganan dan opsional untuk sekali
+  // bayar, dan hanya form ini yang tahu soal tanggal itu.
+  const [subscription, setSubscription] = useState(
+    prospect.billing_type === "subscription",
+  );
+
   useEffect(() => {
     if (state.ok) onDone();
   }, [state, onDone]);
@@ -179,15 +193,13 @@ function WinForm({
       <div className="rounded-md bg-forest-soft px-3 py-2.5 text-sm text-ink-muted">
         <p className="font-medium text-ink">Yang akan dibuat:</p>
         <ul className="mt-1 list-disc space-y-0.5 pl-4">
-          <li>Satu klien baru berstatus Aktif, dengan kontak dari prospek ini.</li>
+          <li>Klien yang menyertai prospek ini diaktifkan (status jadi Aktif).</li>
           <li>
             {withProject
               ? "Satu project pertama untuk klien itu."
               : "Tanpa project — bisa ditambahkan nanti dari halaman klien."}
           </li>
-          <li>
-            Prospek ini tetap ada sebagai riwayat, ditautkan ke klien barunya.
-          </li>
+          <li>Prospek ini tetap ada sebagai riwayat, tautannya sudah ada sejak awal.</li>
         </ul>
       </div>
 
@@ -220,7 +232,7 @@ function WinForm({
       </label>
 
       {withProject && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
           <div>
             <label className="label" htmlFor="project_name">
               Nama Project <span className="text-accent">*</span>
@@ -240,29 +252,50 @@ function WinForm({
               Ganti dengan lingkup kerjanya kalau sudah jelas.
             </p>
           </div>
+
+          {/* Skema & angkanya diprasetel dari prospeknya — yang disepakati
+              hari ini adalah kesepakatan yang sama yang ditawar sepanjang
+              pipeline, jadi mengetiknya ulang cuma mengundang salah salin. */}
+          <BillingSchemeFields
+            amountName="deal_value"
+            amountLabel="Nilai Deal"
+            amountHint={
+              prospect.estimated_value != null
+                ? `Dari estimasi ${formatRupiah(prospect.estimated_value)}.`
+                : "Boleh dikosongkan kalau angkanya belum final."
+            }
+            initial={{
+              amount: prospect.estimated_value,
+              billing_type: prospect.billing_type,
+              billing_period: prospect.billing_period,
+              contract_months: prospect.contract_months,
+            }}
+            onTypeChange={(type) => setSubscription(type === "subscription")}
+          />
+
           <div>
-            <label className="label" htmlFor="deal_value">
-              Nilai Deal
+            <label className="label" htmlFor="start_date">
+              {subscription ? (
+                <>
+                  Mulai Kontrak <span className="text-accent">*</span>
+                </>
+              ) : (
+                "Mulai Dikerjakan"
+              )}
             </label>
             <input
-              id="deal_value"
-              name="deal_value"
-              inputMode="numeric"
-              // Angka yang sudah diketik di prospek ikut, dengan titik
-              // ribuan — sama seperti kolom nilai estimasi di form prospek.
-              defaultValue={
-                prospect.estimated_value != null
-                  ? prospect.estimated_value.toLocaleString("id-ID")
-                  : ""
-              }
+              id="start_date"
+              name="start_date"
+              type="date"
+              required={subscription}
+              defaultValue={today}
               className="field"
-              placeholder="5.000.000"
             />
-            <p className="mt-1 text-xs text-ink-subtle">
-              {prospect.estimated_value != null
-                ? `Dari estimasi ${formatRupiah(prospect.estimated_value)}.`
-                : "Boleh dikosongkan kalau angkanya belum final."}
-            </p>
+            {subscription && (
+              <p className="mt-1 text-xs text-ink-subtle">
+                Jadwal tagihan dan tanggal kontrak berakhir dihitung dari sini.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -280,8 +313,8 @@ function WinForm({
         <button type="button" className="btn btn-ghost" onClick={onClose}>
           Batal
         </button>
-        <SubmitButton pendingLabel="Membuat klien…">
-          Menang — Buat Klien
+        <SubmitButton pendingLabel="Mengaktifkan klien…">
+          Menang — Aktifkan Klien
         </SubmitButton>
       </div>
     </form>

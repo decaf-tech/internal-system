@@ -3,21 +3,56 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/page-header";
-import { formatRupiah, formatRupiahShort } from "@/lib/format";
+import {
+  formatDate,
+  formatRupiah,
+  formatRupiahShort,
+  todayJakarta,
+} from "@/lib/format";
 import { parseKey } from "@/lib/date-range";
-import type { CashflowMonth } from "@/lib/types";
+import {
+  BILLING_PERIOD_UNIT,
+  CONTRACT_RENEWAL_WARNING_DAYS,
+  contractDaysLeft,
+  contractEndDate,
+  contractValue,
+  isSubscription,
+  monthlyValue,
+} from "@/lib/billing";
+import type { BillingScheme } from "@/lib/billing";
+import type { CashflowMonth, ProjectStatus } from "@/lib/types";
 import { FinanceTabs } from "./tabs";
 import { FinanceQuickActions } from "./quick-actions";
 
 /** Berapa bulan terakhir yang digambar di grafik batang. */
 const MONTHS_SHOWN = 6;
 
-type DealRow = {
+/**
+ * Bentuk baris project untuk dua daftar di halaman ini. Tiga kolom skema ikut
+ * dibawa karena `deal_value` sendirian tidak lagi cukup: untuk langganan ia
+ * cuma nilai satu periode tagih (migration 010), dan nilai penuh kontraknya
+ * dihitung `contractValue`.
+ */
+type DealRow = BillingScheme & {
   id: string;
   name: string;
   deal_value: number | null;
+  status: ProjectStatus;
+  start_date: string | null;
   client: { name: string } | null;
 };
+
+/** Project langganan yang kontraknya belum berakhir & belum dibatalkan. */
+function isRunningSubscription(project: DealRow, today: string) {
+  if (!isSubscription(project)) return false;
+  if (project.status === "cancelled") return false;
+
+  const end = contractEndDate(project.start_date, project);
+  // Kontrak tanpa tanggal mulai tetap dihitung berjalan: yang belum diisi
+  // adalah datanya, bukan langganannya — dan menyembunyikannya dari daftar
+  // ini justru membuat kekurangan itu makin sulit ketahuan.
+  return end === null || end >= today;
+}
 
 export default async function FinanceOverviewPage() {
   const supabase = await createClient();
@@ -39,7 +74,11 @@ export default async function FinanceOverviewPage() {
       .neq("status", "received"),
     supabase
       .from("projects")
-      .select("id, name, deal_value, client:clients(name)")
+      .select(
+        `id, name, deal_value, status, start_date,
+         billing_type, billing_period, contract_months,
+         client:clients(name)`,
+      )
       .not("deal_value", "is", null)
       .order("created_at", { ascending: false }),
     supabase
@@ -52,7 +91,9 @@ export default async function FinanceOverviewPage() {
     supabase.from("clients").select("id, name").order("name"),
     supabase
       .from("projects")
-      .select("id, name, client_id, deal_value")
+      .select(
+        "id, name, client_id, deal_value, billing_type, billing_period, contract_months",
+      )
       .order("name"),
   ]);
 
@@ -86,6 +127,25 @@ export default async function FinanceOverviewPage() {
 
   const deals = (dealsResult.data ?? []) as unknown as DealRow[];
 
+  // Langganan yang masih berjalan, plus pendapatan berulang bulanannya
+  // (MRR). Dihitung dari `deals` yang sudah ada di tangan, bukan lewat query
+  // kelima — semuanya baris yang sama, cuma disaring berbeda.
+  const todayJkt = todayJakarta();
+  const subscriptions = deals.filter((deal) =>
+    isRunningSubscription(deal, todayJkt),
+  );
+  const recurringMonthly = subscriptions.reduce(
+    (sum, deal) => sum + monthlyValue(deal, deal.deal_value),
+    0,
+  );
+  const expiringSoon = subscriptions.filter((deal) => {
+    const left = contractDaysLeft(
+      contractEndDate(deal.start_date, deal),
+      todayJkt,
+    );
+    return left !== null && left <= CONTRACT_RENEWAL_WARNING_DAYS;
+  });
+
   const clients = clientsResult.data ?? [];
   const projects = projectsResult.data ?? [];
 
@@ -109,7 +169,7 @@ export default async function FinanceOverviewPage() {
           mendorong grafiknya ke bawah lipatan, dan yang dicari orang saat
           membuka halaman ini justru "bulan ini bagaimana" — bukan salah
           satu angkanya sendirian. */}
-      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-5">
         <Stat
           label="Kas Masuk Bulan Ini"
           value={formatRupiah(current.cash_in)}
@@ -134,6 +194,22 @@ export default async function FinanceOverviewPage() {
             overdueInvoices.length > 0
               ? `${overdueInvoices.length} tagihan lewat jatuh tempo`
               : "sudah disepakati, belum masuk"
+          }
+        />
+        {/* Pendapatan berulang berdiri sebagai kartu sendiri, bukan dilebur
+            ke "kas masuk": kas masuk bulan ini menjawab apa yang sudah
+            terjadi, angka ini menjawab berapa yang datang lagi bulan depan
+            tanpa deal baru — dan itu pertanyaan yang berbeda. */}
+        <Stat
+          label="Pendapatan Berulang"
+          value={`${formatRupiah(recurringMonthly)}/bln`}
+          tone="forest"
+          hint={
+            subscriptions.length === 0
+              ? "belum ada langganan berjalan"
+              : expiringSoon.length > 0
+                ? `${subscriptions.length} langganan · ${expiringSoon.length} perlu diperpanjang`
+                : `dari ${subscriptions.length} langganan berjalan`
           }
         />
       </div>
@@ -194,6 +270,68 @@ export default async function FinanceOverviewPage() {
         </div>
       </section>
 
+      {/* Cuma tampil kalau ada langganannya. Untuk tim yang semua dealnya
+          sekali bayar, kartu kosong berjudul "Langganan Berjalan" tidak
+          memberi tahu apa pun yang belum kelihatan di daftar di bawahnya. */}
+      {subscriptions.length > 0 && (
+        <section className="card mb-5 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base">Langganan Berjalan</h2>
+            <p className="font-mono text-[11px] text-ink-subtle">
+              {formatRupiah(recurringMonthly)}/bulan · {formatRupiah(recurringMonthly * 12)}/tahun
+            </p>
+          </div>
+
+          <ul className="divide-y divide-line">
+            {subscriptions.map((deal) => {
+              const end = contractEndDate(deal.start_date, deal);
+              const daysLeft = contractDaysLeft(end, todayJkt);
+              const soon =
+                daysLeft !== null && daysLeft <= CONTRACT_RENEWAL_WARNING_DAYS;
+
+              return (
+                <li
+                  key={deal.id}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{deal.name}</p>
+                    <p className="truncate font-mono text-[11px] text-ink-subtle">
+                      {deal.client?.name ?? "Tanpa klien"}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="font-mono text-xs whitespace-nowrap text-ink-muted">
+                      {formatRupiah(Number(deal.deal_value ?? 0))}
+                      <span className="text-ink-subtle">
+                        /
+                        {deal.billing_period
+                          ? BILLING_PERIOD_UNIT[deal.billing_period]
+                          : "periode"}
+                      </span>
+                    </p>
+                    <p
+                      className={`font-mono text-[10px] ${
+                        soon ? "text-danger" : "text-ink-subtle"
+                      }`}
+                    >
+                      {end === null
+                        ? "tanggal mulai belum diisi"
+                        : daysLeft !== null && daysLeft < 0
+                          ? `berakhir ${formatDate(end)}`
+                          : `s/d ${formatDate(end)}${
+                              daysLeft !== null ? ` · ${daysLeft} hari` : ""
+                            }`}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       <section className="card p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base">Deal per Project</h2>
@@ -216,7 +354,10 @@ export default async function FinanceOverviewPage() {
         ) : (
           <ul className="divide-y divide-line">
             {deals.map((deal) => {
-              const value = Number(deal.deal_value ?? 0);
+              // Nilai PENUH kontrak, bukan `deal_value` mentah: untuk
+              // langganan yang kedua adalah harga satu periode, dan batang
+              // kemajuannya akan penuh setelah satu tagihan saja.
+              const value = contractValue(deal, deal.deal_value) ?? 0;
               const received = receivedByProject.get(deal.id) ?? 0;
               const percent =
                 value > 0 ? Math.min(100, (received / value) * 100) : 0;
@@ -230,6 +371,14 @@ export default async function FinanceOverviewPage() {
                       </p>
                       <p className="truncate font-mono text-[11px] text-ink-subtle">
                         {deal.client?.name ?? "Tanpa klien"}
+                        {isSubscription(deal) && deal.billing_period && (
+                          <>
+                            {" · "}
+                            {formatRupiahShort(Number(deal.deal_value ?? 0))}/
+                            {BILLING_PERIOD_UNIT[deal.billing_period]} ×{" "}
+                            {deal.contract_months} bln
+                          </>
+                        )}
                       </p>
                     </div>
                     <p className="font-mono text-xs whitespace-nowrap text-ink-muted">
