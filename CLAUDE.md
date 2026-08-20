@@ -23,7 +23,12 @@ server sendiri (`server-merah-supermicro`), domain lewat Cloudflare.
 jadi penghalang di §10 sudah lepas dan migrasi ini yang berikutnya
 dikerjakan; §10 di sana yang memegang urutan mulainya. Berkas
 `Dockerfile`/`docker-compose.yml`/`output: "standalone"` di repo berasal
-dari rencana itu, belum pernah di-build.
+dari rencana itu, belum pernah di-build. `output: "standalone"` di
+`next.config.ts` sengaja dimatikan saat `process.env.VERCEL` ada:
+Vercel merakit lambda dari `.next/next-server.js.nft.json`, dan mode
+standalone tidak pernah menulis berkas itu — buildnya gagal ENOENT.
+Begitu Vercel ditinggalkan, pagar itu dilepas jadi `output: "standalone"`
+biasa.
 Lalu `docs/PRD v3.5.md` — situs publik di `/`: form sesi discovery
 (menggantikan tombol yang melompat ke WhatsApp), tabel
 `discovery_requests` + kotak masuknya di `/backoffice/clients`, dan
