@@ -363,8 +363,13 @@
     transform: translateY(1.25rem) scale(0.9);
   }
 
-  .reveal.is-visible,
-  .reveal-pop.is-visible {
+  /* `html.js` ikut disebut di sini, bukan cuma `.reveal.is-visible`.
+     Tanpa itu selectornya (0,2,0) KALAH dari keadaan awal di atas yang
+     (0,2,1) — `html` menyumbang satu type — dan memasang `.is-visible`
+     tidak pernah mengubah apa pun: seluruh isi halaman yang memakai
+     `.reveal` tinggal tembus pandang selamanya. */
+  html.js .reveal.is-visible,
+  html.js .reveal-pop.is-visible {
     opacity: 1;
     filter: blur(0);
     transform: none;
