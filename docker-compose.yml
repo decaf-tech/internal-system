@@ -1,9 +1,12 @@
-# Dijalankan di server-merah-supermicro. Selalu dengan --env-file supaya
-# satu file yang sama mengisi dua hal sekaligus: build args NEXT_PUBLIC_*
-# (di-inline ke bundle browser saat build) dan environment container
-# (dibaca server saat runtime).
+# Dijalankan di server-merah-supermicro, baik manual lewat CLI maupun lewat
+# Portainer Stack (deploy dari Git — lihat PRD v3.4 §5 langkah 5). Kedua
+# jalur sama-sama cuma mengisi ${VAR} di bawah, tidak ada file env fisik
+# yang dibaca dari folder project — supaya Portainer, yang meng-clone repo
+# ke folder sendiri dan tidak ikut membawa .env.production, tetap bisa
+# deploy tanpa error "env file not found".
 #
-#   docker compose --env-file .env.production up -d --build
+#   CLI:       docker compose --env-file .env.production up -d --build
+#   Portainer: isi enam variabel di bawah lewat Environment variables stack
 #
 services:
   app:
@@ -19,5 +22,10 @@ services:
     # bukan port ini — konsisten dengan pagar akses di blueprint §0B.3.
     ports:
       - "127.0.0.1:3000:3000"
-    env_file:
-      - .env.production
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN}
+      GOOGLE_DRIVE_ROOT_FOLDER_ID: ${GOOGLE_DRIVE_ROOT_FOLDER_ID}
