@@ -34,5 +34,5 @@ export async function updatePassword(
   }
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/backoffice");
 }

@@ -1,7 +1,7 @@
 import { ResetPasswordForm } from "./reset-password-form";
 import { getCurrentUser } from "@/lib/supabase/server";
 
-// Sengaja di luar grup (app) supaya tidak ikut memuat bilah menu — orang
+// Sengaja di luar /backoffice supaya tidak ikut memuat bilah menu — orang
 // yang sampai di sini belum benar-benar "masuk", cuma sedang memperbaiki
 // password. Halaman ini juga tidak didaftarkan sebagai path publik di
 // proxy.ts: aksesnya justru harus bersesi, dan sesi itu dibuat oleh

@@ -12,7 +12,7 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/");
+  const next = String(formData.get("next") ?? "/backoffice");
 
   if (!email || !password) {
     return { error: "Email dan password wajib diisi." };
@@ -29,7 +29,9 @@ export async function login(
   revalidatePath("/", "layout");
   // `next` dibatasi ke path internal supaya parameter URL tidak bisa
   // dipakai mengarahkan user ke situs luar setelah login.
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+  redirect(
+    next.startsWith("/") && !next.startsWith("//") ? next : "/backoffice",
+  );
 }
 
 export async function logout() {

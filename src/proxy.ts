@@ -9,8 +9,13 @@ import { supabaseKey, supabaseUrl } from "@/lib/env";
 //      menulis cookie, jadi kalau ini tidak ada, user akan logout sendiri.
 //   2. Menendang pengunjung yang belum login ke /login.
 
-// Halaman yang boleh diakses tanpa login.
-const PUBLIC_PATHS = ["/login", "/auth"];
+// Sejak situs publik menempati akar, daftarnya dibalik: yang didaftarkan
+// adalah wilayah yang DIJAGA, bukan yang dibebaskan. Dengan bentuk
+// sebelumnya (daftar putih `PUBLIC_PATHS`), setiap halaman pemasaran baru
+// diam-diam jadi terkunci sampai seseorang ingat mendaftarkannya — dan
+// gejalanya (pengunjung dilempar ke /login) baru terlihat dari luar sesi
+// pengembangan, karena di laptop kita hampir selalu sudah punya sesi.
+const PROTECTED_PREFIX = "/backoffice";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -53,11 +58,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
+  const isProtected =
+    pathname === PROTECTED_PREFIX ||
+    pathname.startsWith(`${PROTECTED_PREFIX}/`);
 
-  if (!user && !isPublic) {
+  if (!user && isProtected) {
     const loginUrl = new URL("/login", request.url);
     // Simpan tujuan awal supaya setelah login user dikembalikan ke sana.
     loginUrl.searchParams.set("next", pathname);
@@ -65,7 +70,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(PROTECTED_PREFIX, request.url));
   }
 
   return response;

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDate } from "@/lib/format";
 import { NOTE_KIND_LABEL, type NoteSummary } from "@/lib/types";
-import { searchNotes } from "@/app/(app)/notes/actions";
+import { searchNotes } from "@/app/backoffice/notes/actions";
 
 /** Jeda ketik sebelum pencarian dikirim ke server. */
 const SEARCH_DELAY_MS = 250;

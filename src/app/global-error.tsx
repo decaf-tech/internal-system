@@ -2,7 +2,7 @@
 
 /**
  * Lapisan terakhir: dipakai hanya kalau yang gagal adalah root layout itu
- * sendiri, saat `(app)/error.tsx` belum sempat terpasang.
+ * sendiri, saat `backoffice/error.tsx` belum sempat terpasang.
  *
  * Karena menggantikan seluruh dokumen, file ini wajib menuliskan `<html>`
  * dan `<body>` sendiri — dan tidak bisa ikut menumpang `globals.css` yang
@@ -28,8 +28,8 @@ export default function GlobalError({
           // Disalin dari --color-canvas & --color-ink di globals.css.
           // Kalau palet di sana berubah, dua baris ini ikut disesuaikan
           // manual — halaman ini memang tidak bisa membaca token itu.
-          backgroundColor: "#faf7f2",
-          color: "#1c1815",
+          backgroundColor: "#f7f9fc",
+          color: "#081f3b",
           fontFamily: "system-ui, sans-serif",
           padding: "1.5rem",
         }}
@@ -38,7 +38,7 @@ export default function GlobalError({
           <h1 style={{ fontSize: "1.25rem", margin: 0 }}>
             Sistem gagal dimuat
           </h1>
-          <p style={{ fontSize: "0.875rem", color: "#6e655c", marginTop: 8 }}>
+          <p style={{ fontSize: "0.875rem", color: "#475a73", marginTop: 8 }}>
             Muat ulang halaman ini. Kalau masih sama, kabari Abi beserta kode
             di bawah.
           </p>
@@ -50,8 +50,8 @@ export default function GlobalError({
               padding: "0.625rem 1.25rem",
               borderRadius: "0.375rem",
               border: 0,
-              backgroundColor: "#1c1815",
-              color: "#faf7f2",
+              backgroundColor: "#081f3b",
+              color: "#f7f9fc",
               fontSize: "0.875rem",
               cursor: "pointer",
             }}
@@ -64,7 +64,7 @@ export default function GlobalError({
                 marginTop: 20,
                 fontFamily: "ui-monospace, monospace",
                 fontSize: "0.6875rem",
-                color: "#9a9089",
+                color: "#64748b",
               }}
             >
               Kode: {error.digest}

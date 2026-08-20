@@ -4,18 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/", label: "Dasbor", icon: IconGrid },
-  { href: "/tasks", label: "Tugas", icon: IconCheck },
-  { href: "/notes", label: "Catatan", icon: IconNote },
-  { href: "/clients", label: "Klien", icon: IconUsers },
-  { href: "/finance", label: "Keuangan", icon: IconWallet },
-  { href: "/documents", label: "Dokumen", icon: IconFile },
+  { href: "/backoffice", label: "Dasbor", icon: IconGrid },
+  { href: "/backoffice/tasks", label: "Tugas", icon: IconCheck },
+  { href: "/backoffice/notes", label: "Catatan", icon: IconNote },
+  { href: "/backoffice/clients", label: "Klien", icon: IconUsers },
+  { href: "/backoffice/finance", label: "Keuangan", icon: IconWallet },
+  { href: "/backoffice/documents", label: "Dokumen", icon: IconFile },
 ] as const;
 
-const ADMIN_LINK = { href: "/admin", label: "Admin", icon: IconShield } as const;
+const ADMIN_LINK = {
+  href: "/backoffice/admin",
+  label: "Admin",
+  icon: IconShield,
+} as const;
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  // Dasbor adalah akar backoffice, jadi ia cocok dengan semua turunannya
+  // kalau dibandingkan pakai startsWith — hanya kecocokan persis yang benar.
+  return href === "/backoffice"
+    ? pathname === "/backoffice"
+    : pathname.startsWith(href);
 }
 
 /** Daftar menu tegak di sisi kiri — bentuk untuk layar lebar. */
@@ -55,7 +63,7 @@ export function Nav({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
  * Admin sengaja TIDAK ikut di sini meski Abi punya aksesnya: tujuh kolom
  * di layar 375px berarti 53px per tombol, dan labelnya mulai terpotong.
  * Halaman itu dibuka sebulan sekali, jadi tempatnya di bilah kepala
- * (lihat `(app)/layout.tsx`) — bukan mengambil seperenam dari ruang yang
+ * (lihat `backoffice/layout.tsx`) — bukan mengambil seperenam dari ruang yang
  * dipakai tiap hari.
  */
 export function MobileTabBar() {

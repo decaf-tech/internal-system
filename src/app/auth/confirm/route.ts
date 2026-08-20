@@ -37,9 +37,16 @@ export async function GET(request: Request) {
 
   // Sama seperti `next` di halaman login: dibatasi ke path internal supaya
   // tautan email tidak bisa dipakai melempar orang ke situs luar.
-  const rawNext = url.searchParams.get("next") ?? "/";
+  //
+  // Tujuan bawaannya `/backoffice`, bukan `/`: sejak situs publik menempati
+  // akar, mengantar orang yang baru menukar token undangan ke halaman
+  // pemasaran berarti sesinya sudah aktif tapi ia tidak melihat tanda apa
+  // pun bahwa ia sudah masuk.
+  const rawNext = url.searchParams.get("next") ?? "/backoffice";
   const next =
-    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+    rawNext.startsWith("/") && !rawNext.startsWith("//")
+      ? rawNext
+      : "/backoffice";
 
   const supabase = await createClient();
 

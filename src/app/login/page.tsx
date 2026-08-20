@@ -1,9 +1,10 @@
+import { LogoLockup } from "@/components/brand";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const rawNext = params.next;
-  const next = typeof rawNext === "string" ? rawNext : "/";
+  const next = typeof rawNext === "string" ? rawNext : "/backoffice";
   const linkFailed = params.error === "tautan-tidak-berlaku";
 
   return (
@@ -11,7 +12,13 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <p className="eyebrow">Sistem Internal</p>
-          <h1 className="mt-2 text-3xl">Decaf</h1>
+          <h1 className="mt-2">
+            <LogoLockup
+              markClassName="h-9"
+              textClassName="text-3xl"
+              priority
+            />
+          </h1>
           <p className="mt-2 text-sm text-ink-muted">
             Manajemen tim, klien, dan operasional — dalam satu tempat.
           </p>

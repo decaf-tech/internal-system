@@ -33,7 +33,7 @@ export type NotificationItem = {
 };
 
 export type NotificationCategory = {
-  key: "tasks" | "events" | "prospects";
+  key: "tasks" | "events" | "prospects" | "leads";
   /** Sudah termasuk angkanya — "3 tugas perlu perhatian". */
   label: string;
   href: string;
@@ -51,8 +51,9 @@ export type NotificationSummary = {
 /**
  * Jumlah baris rincian yang ikut dibawa per kategori.
  *
- * Panelnya dibatasi struktural oleh jumlah kategori (maksimal tiga baris,
- * §3.2), jadi batas ini cuma soal seberapa banyak yang berguna dilihat tanpa
+ * Panelnya dibatasi struktural oleh jumlah kategori (empat baris sejak
+ * permintaan discovery ikut masuk; tiga di PRD v3.0 §3.2), jadi batas ini
+ * cuma soal seberapa banyak yang berguna dilihat tanpa
  * berpindah halaman. Lima sudah cukup untuk mengenali "oh, yang itu" —
  * lebih dari itu memang lebih enak dibaca di halamannya sendiri.
  */
@@ -64,43 +65,73 @@ export async function getNotificationSummary(
   const supabase = await createClient();
   const today = todayJakarta();
 
-  const [tasksResult, eventsResult, prospectsResult] = await Promise.all([
-    // `!inner` mengubah embed jadi filter: yang kembali cuma tugas yang
-    // benar-benar ditugaskan ke orang ini, bukan semua tugas dengan daftar
-    // penugasan yang kebetulan kosong.
-    supabase
-      .from("tasks")
-      .select("id, title, due_date, task_assignees!inner(profile_id)")
-      .neq("status", "done")
-      .lte("due_date", today)
-      .eq("task_assignees.profile_id", userId)
-      .order("due_date", { ascending: true }),
+  const [tasksResult, eventsResult, prospectsResult, requestsResult] =
+    await Promise.all([
+      // `!inner` mengubah embed jadi filter: yang kembali cuma tugas yang
+      // benar-benar ditugaskan ke orang ini, bukan semua tugas dengan daftar
+      // penugasan yang kebetulan kosong.
+      supabase
+        .from("tasks")
+        .select("id, title, due_date, task_assignees!inner(profile_id)")
+        .neq("status", "done")
+        .lte("due_date", today)
+        .eq("task_assignees.profile_id", userId)
+        .order("due_date", { ascending: true }),
 
-    // Rapat: yang diambil serinya, bukan kemunculannya — satu baris `events`
-    // bisa berarti puluhan rapat, dan mana yang jatuh hari ini baru terjawab
-    // setelah pola pengulangannya dihitung (lihat lib/events.ts). Dua filter
-    // di bawah memangkas seri yang mustahil menyentuh hari ini.
-    supabase
-      .from("events")
-      .select(
-        `*,
-         event_attendees!inner(profile_id),
-         event_exceptions(*)`,
-      )
-      .eq("event_attendees.profile_id", userId)
-      .lte("event_date", today)
-      .or(`recurrence_until.is.null,recurrence_until.gte.${today}`),
+      // Rapat: yang diambil serinya, bukan kemunculannya — satu baris `events`
+      // bisa berarti puluhan rapat, dan mana yang jatuh hari ini baru terjawab
+      // setelah pola pengulangannya dihitung (lihat lib/events.ts). Dua filter
+      // di bawah memangkas seri yang mustahil menyentuh hari ini.
+      supabase
+        .from("events")
+        .select(
+          `*,
+           event_attendees!inner(profile_id),
+           event_exceptions(*)`,
+        )
+        .eq("event_attendees.profile_id", userId)
+        .lte("event_date", today)
+        .or(`recurrence_until.is.null,recurrence_until.gte.${today}`),
 
-    supabase
-      .from("prospects")
-      .select("id, name, company, next_follow_up_date")
-      .in("stage", PROSPECT_OPEN_STAGES)
-      .lte("next_follow_up_date", today)
-      .eq("owner_id", userId)
-      .order("next_follow_up_date", { ascending: true }),
-  ]);
+      supabase
+        .from("prospects")
+        .select("id, name, company, next_follow_up_date")
+        .in("stage", PROSPECT_OPEN_STAGES)
+        .lte("next_follow_up_date", today)
+        .eq("owner_id", userId)
+        .order("next_follow_up_date", { ascending: true }),
+
+      // Satu-satunya kategori yang TIDAK disaring per orang: permintaan
+      // dari situs publik belum punya pemilik — belum ada seorang pun yang
+      // mengambilnya. Kalau ia cuma muncul di layar satu orang, ia menunggu
+      // orang itu membuka aplikasi. Yang ini tidak boleh menunggu siapa pun.
+      supabase
+        .from("discovery_requests")
+        .select("id, business, phone, created_at")
+        .eq("status", "baru")
+        .order("created_at", { ascending: false }),
+    ]);
 
   const categories: NotificationCategory[] = [];
+
+  // Ditaruh paling atas dengan sengaja: tugas dan follow-up adalah pekerjaan
+  // yang sudah ada di dalam sistem dan tidak ke mana-mana kalau dibalas satu
+  // jam lagi. Yang ini orang asing yang baru saja menekan tombol dan sekarang
+  // sedang menunggu telepon.
+  const requests = requestsResult.data ?? [];
+  if (requests.length > 0) {
+    categories.push({
+      key: "leads",
+      label: `${requests.length} permintaan sesi discovery`,
+      href: "/backoffice/clients",
+      count: requests.length,
+      items: requests.slice(0, MAX_ITEMS).map((request) => ({
+        id: request.id,
+        title: request.business,
+        hint: request.phone,
+      })),
+    });
+  }
 
   const tasks = tasksResult.data ?? [];
   if (tasks.length > 0) {
@@ -109,7 +140,7 @@ export async function getNotificationSummary(
       // Istilah yang sama dengan kartu dasbor ("Perlu Perhatian"): dua tempat
       // yang menghitung hal yang sama sebaiknya juga menamainya sama.
       label: `${tasks.length} tugas perlu perhatian`,
-      href: "/tasks",
+      href: "/backoffice/tasks",
       count: tasks.length,
       items: tasks.slice(0, MAX_ITEMS).map((task) => ({
         id: task.id,
@@ -129,7 +160,7 @@ export async function getNotificationSummary(
     categories.push({
       key: "events",
       label: `${occurrences.length} rapat hari ini`,
-      href: "/tasks",
+      href: "/backoffice/tasks",
       count: occurrences.length,
       items: occurrences.slice(0, MAX_ITEMS).map((occurrence) => ({
         id: `${occurrence.series.id}-${occurrence.occurrenceDate}`,
@@ -144,7 +175,7 @@ export async function getNotificationSummary(
     categories.push({
       key: "prospects",
       label: `${prospects.length} follow-up prospek`,
-      href: "/clients",
+      href: "/backoffice/clients",
       count: prospects.length,
       items: prospects.slice(0, MAX_ITEMS).map((prospect) => ({
         id: prospect.id,

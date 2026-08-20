@@ -1,50 +1,192 @@
 @import "tailwindcss";
 
 /* =====================================================================
-   Design token — diturunkan dari Proposal Transformasi Digital v2.1
-   supaya sistem internal ini terasa satu keluarga dengan dokumen klien:
-   latar krem, tinta cokelat gelap, aksen terracotta, label monospace.
+   Larut antar-halaman — pengalih bahasa ID/EN.
+
+   `/` dan `/en` adalah dua dokumen statis terpisah (lihat komentar di
+   marketing/site.tsx), jadi berpindah bahasa selalu navigasi sungguhan,
+   bukan pertukaran state di satu halaman. Cross-Document View
+   Transitions yang membuat navigasi semacam itu tetap bisa larut: satu
+   baris ini memberi tahu browser untuk menangkap potret halaman lama &
+   baru lalu meluruhkan satu ke yang lain, tanpa satu byte JavaScript.
+
+   `navigation: auto` cuma menyala untuk navigasi biasa (tautan, bukan
+   reload paksa) ke tujuan SAMA ASAL yang juga memasang baris ini — di
+   sini itu berarti cuma antara `/` dan `/en`, karena keduanya berbagi
+   berkas CSS ini lewat layout yang sama.
+
+   Di browser yang belum mendukungnya (Firefox, Safari), aturan ini
+   diam-diam diabaikan — navigasinya tetap terjadi seperti biasa, cuma
+   tanpa animasi. Progresif seperti animasi bergulir lain di berkas ini.
+   ===================================================================== */
+@view-transition {
+  navigation: auto;
+}
+
+/* Bukan potongan default browser (silang-pudar polos): disamakan
+   dengan bahasa "larut" yang sama dipakai di layar pembuka — buram+kabur,
+   bukan cuma pudar. Halaman lama larut PERGI sedikit lebih cepat dari
+   halaman baru larut MASUK, supaya sepersekian detik jeda di tengah
+   terasa sebagai transisi yang disengaja, bukan dua lapis yang kebetulan
+   tumpang tindih.
+
+   Keyframe-nya sendiri (`vt-*`), bukan `dissolve-in` yang dipakai layar
+   pembuka: pseudo-elemen `::view-transition-*` ini berdiri di luar
+   `@layer` mana pun punya halaman (mereka potret, bukan bagian pohon
+   DOM), dan pencarian nama keyframe lintas lapisan tidak konsisten
+   antar-browser. Nilainya sengaja disamakan persis dengan `dissolve-in`
+   supaya keduanya terlihat sebagai satu bahasa gerak yang sama. */
+::view-transition-old(root) {
+  animation: vt-dissolve-out 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-dissolve-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes vt-dissolve-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes vt-dissolve-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* =====================================================================
+   Design token — diturunkan dari palet brand Decaf Tech
+   (`docs/brand/color-palette.jpeg`): Deep Navy, Tech Blue, Electric Blue,
+   Mint, Light Gray, dengan Sora sebagai huruf display.
+
+   Lima warna itu yang jadi jangkar; sisanya di bawah adalah tangga
+   turunan (permukaan, garis, tinta redup) yang dibutuhkan antarmuka
+   tapi tidak ada di kartu palet.
+
+   Menggantikan palet krem/terracotta sebelumnya, yang diturunkan dari
+   Proposal Transformasi Digital v2.1 — dari sebelum ada identitas visual
+   sendiri. Nama tokennya sengaja tidak ikut berubah: yang berganti nilai,
+   bukan perannya, jadi tidak ada satu pun komponen yang perlu disentuh
+   hanya karena warnanya bergeser.
    ===================================================================== */
 
 @theme {
-  /* Latar & permukaan */
-  --color-canvas: #faf7f2;
+  /* Latar & permukaan — netral dingin, condong ke Light Gray brand */
+  --color-canvas: #f7f9fc;
   --color-surface: #ffffff;
-  --color-surface-muted: #f2eee6;
-  --color-surface-sunken: #ebe5da;
+  --color-surface-muted: #eef2f8;
+  --color-surface-sunken: #e5e7eb; /* Light Gray */
 
-  /* Tinta */
-  --color-ink: #1c1815;
-  --color-ink-muted: #6e655c;
-  --color-ink-subtle: #9a9089;
-  --color-ink-inverse: #faf7f2;
+  /* Tinta — Deep Navy, plus dua tingkat redupnya. Navy dipakai sebagai
+     warna teks utama, bukan hitam: itu yang membuat halaman terbaca
+     "biru" bahkan di bagian yang tidak punya satu pun elemen berwarna. */
+  --color-ink: #081f3b; /* Deep Navy */
+  --color-ink-muted: #475a73;
+  --color-ink-subtle: #64748b;
+  --color-ink-inverse: #f7f9fc;
 
-  /* Aksen terracotta — dipakai untuk label seksi & elemen aktif */
-  --color-accent: #b0522c;
-  --color-accent-hover: #97441f;
-  --color-accent-soft: #f6e7de;
+  /* Aksen Tech Blue — label seksi, tautan, tombol utama */
+  --color-accent: #2563eb; /* Tech Blue */
+  --color-accent-hover: #1d4ed8;
+  /* Lebih terang dari biru-100 biasa supaya pasangan
+     `bg-accent-soft` + `text-accent` di badge lolos 4,5:1 (jadi 4,57:1;
+     dengan #dbeafe cuma 4,24:1 — dan badge adalah teks 11px). */
+  --color-accent-soft: #e8f2ff;
 
-  /* Hijau tua — di proposal dipakai untuk angka capaian & jalur branding */
-  --color-forest: #235e54;
-  --color-forest-soft: #dceae6;
+  /* Mint — warna "Growth, Productivity" di kartu palet. Dipakai untuk
+     BIDANG dan grafik saja: di atas canvas ia cuma 2,4:1, jauh di bawah
+     ambang teks. Versi teks-amannya --color-forest di bawah. */
+  --color-mint: #10b981; /* Mint */
+
+  /* Mint yang digelapkan sampai aman jadi teks (5,2:1 di atas canvas):
+     angka capaian, badge "selesai/lunas", jalur branding di situs publik.
+
+     Namanya sengaja tetap "forest" walau warnanya sekarang mint. Bukan
+     karena malas: ada `MemberColor` bernama "forest" juga di lib/types.ts
+     yang nilainya tersimpan di basis data dan sama sekali bukan token
+     ini — mengganti yang satu jadi "mint" membuat dua hal yang tidak
+     berhubungan itu terlihat seperti sepasang. */
+  --color-forest: #047857;
+  --color-forest-soft: #d1fae5;
 
   /* Garis */
-  --color-line: #e5dfd4;
-  --color-line-strong: #d3cabb;
+  --color-line: #e5e7eb; /* Light Gray */
+  --color-line-strong: #cbd5e1;
 
   /* Status */
-  --color-warn: #a8761c;
-  --color-warn-soft: #f8eed8;
-  --color-danger: #a33a2c;
-  --color-danger-soft: #f7e2df;
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
 
-  /* Tipografi */
+  /* Tinta terang — dipakai situs publik di seksi berlatar gelap, di mana
+     --color-ink-muted terlalu redup untuk lolos kontras. */
+  --color-ink-inverse-muted: #9fb0c4;
+
+  /* Latar gelap situs publik. Sengaja Deep Navy yang sama persis dengan
+     --color-ink: seksi gelap dan teks gelap adalah warna yang sama,
+     dibalik — itu yang menjaga halaman tetap terasa satu benda saat
+     berganti-ganti terang/gelap. */
+  --color-night: #081f3b; /* Deep Navy */
+  --color-night-soft: #14355e;
+
+  /* Versi terang dari aksen, KHUSUS teks di atas latar gelap.
+     Tech Blue cuma mencapai 3,2:1 di atas --color-night — di bawah ambang
+     WCAG AA 4,5:1, dan di situs ini ia dipakai justru untuk teks kecil:
+     eyebrow, label studi kasus, angka capaian.
+
+     Electric Blue menyelesaikannya di 9,2:1 (7,3:1 di atas kartunya),
+     sekaligus memakai warna kelima palet yang di area terang tidak punya
+     tempat — di atas putih ia cuma 1,7:1.
+
+     Ini untuk TEKS saja. Tombol tetap memakai --color-accent: latar
+     seterang ini dengan tulisan putih di atasnya cuma 1,7:1. */
+  --color-accent-bright: #22d3ee; /* Electric Blue */
+  --color-warn-bright: #fbbf24;
+
+  /* Tipografi — dua keluarga huruf, bukan tiga.
+
+     Sora (display) memegang wordmark dan semua judul; Plus Jakarta Sans
+     memegang teks yang dibaca panjang-panjang. Lora yang dulu memegang
+     judul sudah dilepas bersama palet krem: serif editorial itu pasangan
+     dari identitas yang lama. */
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-lora), ui-serif, Georgia, serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
+  /* Tautan jangkar situs publik (Filosofi, Bukti, Proses, …) meluncur,
+     bukan melompat — satu-satunya cara pengunjung tahu ia berpindah ke
+     bawah dalam halaman yang sama, bukan ke halaman lain.
+
+     Dipasang di <html>, bukan di kontainer mana pun: perpindahan karena
+     tautan jangkar dijalankan pada elemen penggulir dokumen, dan blok
+     `prefers-reduced-motion` di bawah sudah mengembalikannya ke `auto`
+     untuk yang menyalakan setelan itu. */
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-canvas);
     color: var(--color-ink);
@@ -59,7 +201,7 @@
   h1,
   h2,
   h3 {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-weight: 600;
     letter-spacing: -0.01em;
   }
@@ -93,10 +235,482 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+
+    /* Animasi bergulir (splash, kurva) tidak ikut mati oleh aturan di
+       atas: progresnya ditentukan posisi gulir, bukan
+       `animation-duration` — memendekkan durasinya tidak berpengaruh
+       apa-apa. Harus dimatikan terpisah, lengkap dengan mengembalikan
+       keadaan akhirnya.
+
+       `.reveal`/`.reveal-pop` sendiri sudah memakai `transition`
+       (reveal-on-scroll.tsx), jadi durasinya SUDAH ikut terpotong oleh
+       `transition-duration: 0.01ms` di atas — tapi tetap didaftar di
+       sini supaya keadaan awalnya (opacity 0 di bawah `html.js`) selalu
+       dipaksa penuh, tidak bergantung IntersectionObserver sempat
+       menembak atau belum saat halaman pertama dibuka.
+
+       Yang didaftar di sini cuma yang MEMINDAHKAN atau MENYEMBUNYIKAN
+       sesuatu. Dua animasi bergulir lain sengaja dibiarkan hidup:
+       `.nav-elevate` (bayangan yang tumbuh) dan `.scroll-progress`
+       (garis kemajuan) tidak menggerakkan apa pun di bidang pandang,
+       dan garis kemajuan justru paling berguna bagi yang mematikan
+       animasi — halaman ini panjang. Mematikannya lewat aturan ini juga
+       akan salah arah: `animation: none` membekukan garisnya di keadaan
+       akhir, yaitu penuh, yang berarti berbohong soal posisi gulir. */
+    .reveal,
+    .reveal-pop,
+    .splash-exit,
+    .splash-drift-far,
+    .splash-drift-near,
+    .scroll-cue,
+    .curve-line,
+    .curve-area,
+    .curve-baseline,
+    .curve-dot {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      /* `.reveal`, `.reveal-pop`, dan `.splash-exit` juga larut lewat
+         `filter: blur()` — `transform: none` di atas tidak menyentuh
+         itu, jadi tanpa baris ini elemen-elemen itu tetap kabur
+         permanen bagi yang mematikan animasi. Elemen lain di daftar ini
+         tidak memakai filter sama sekali, jadi baris ini tidak
+         berpengaruh apa-apa buat mereka. */
+      filter: none !important;
+    }
+
+    /* Kurvanya digambar dengan menggeser dash, jadi mengembalikan
+       `transform` saja tidak cukup — tanpa baris ini garisnya tetap
+       tergeser habis alias tidak kelihatan sama sekali. */
+    .curve-line {
+      stroke-dasharray: none !important;
+      stroke-dashoffset: 0 !important;
+    }
   }
 }
 
 @layer components {
+  /* =================================================================
+     Wordmark "Decaf" — dipakai HANYA untuk nama brand, bukan untuk judul
+     seksi. Sejak ada logo, kata ini tidak lagi berdiri sendiri: ia
+     mendampingi lambangnya (lihat components/brand.tsx), jadi tugasnya
+     berubah dari "jadi tanda pengenal" menjadi "terbaca sebagai nama".
+
+     Sora Bold — huruf yang tertulis di kartu palet. Sumbu variabelnya
+     cuma `wght` (100–800), tidak ada `wdth` seperti Fredoka dulu, jadi
+     pelebarannya diambil dari `letter-spacing` saja.
+     ================================================================= */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    /* Sora sendiri sudah agak rapat di berat tebal. Renggang sedikit
+       supaya "Decaf" tidak menggumpal jadi satu bentuk saat kecil —
+       ukuran yang paling sering dipakai justru 20–24px di bilah nav. */
+    letter-spacing: 0.01em;
+  }
+
+  /* Judul besar situs publik — Sora juga, tapi seberat 600 dan sedikit
+     dirapatkan: kalimat panjang di berat 700 mulai berteriak, sementara
+     wordmark-nya justru harus paling tebal di halaman. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
+  }
+
+  /* =================================================================
+     Muncul-saat-tergulir untuk situs publik.
+
+     Dulu ini `animation-timeline: view()` murni CSS, tanpa satu byte
+     JavaScript pun — dilepas karena progresnya terikat JARAK gulir,
+     bukan WAKTU: gulir cepat (flick trackpad/mobile) menghabiskan
+     seluruh jendela animasi dalam sepersekian detik, jadi seberapa pun
+     jendelanya diperlebar atau digeser, efeknya tetap nyaris tak
+     kerasa kalau pengunjung tidak kebetulan menggulir pelan.
+
+     Yang dipakai sekarang: IntersectionObserver + `transition` biasa
+     (lihat `components/marketing/reveal-on-scroll.tsx`) — pola yang
+     sama dipakai abiyyuhanief.id/#the-hook. Begitu sebuah elemen 40%
+     kelihatan, kelas `.is-visible` dipasang dan larutnya berjalan
+     PENUH dalam durasi tetap, apa pun kecepatan gulirnya.
+
+     Keadaan awal (tembus pandang, kabur, turun sedikit) HANYA dipasang
+     di bawah `html.js` — kelas yang dipasang skrip `beforeInteractive`
+     di `app/layout.tsx` secepat mungkin sebelum cat pertama. Tanpa
+     kelas itu (JavaScript mati/gagal dimuat) elemennya tidak pernah
+     disembunyikan sama sekali, jadi isinya tetap terbaca penuh — bukan
+     disembunyikan dulu lalu bergantung skrip untuk memunculkannya
+     kembali. Prinsip yang sama dengan versi CSS-murni yang lama,
+     cuma jaminannya sekarang lewat kelas, bukan lewat `@supports`. */
+  html.js .reveal,
+  html.js .reveal-pop {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(2rem);
+    transition:
+      opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Varian untuk ANGKA (statistik hero, rekam jejak): naik sambil
+     membesar sedikit. Dibedakan dari kartu teks dengan sengaja —
+     sekumpulan angka yang "menetas" terbaca sebagai capaian yang
+     dihitung, sementara gerakan yang sama pada paragraf cuma bikin
+     tulisannya susah dikunci mata. */
+  html.js .reveal-pop {
+    transform: translateY(1.25rem) scale(0.9);
+  }
+
+  .reveal.is-visible,
+  .reveal-pop.is-visible {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+
+  /* Jeda SEBELUM larutnya mulai jalan. Beda dari versi CSS-murni yang
+     lama (menggeser jendela gulir): ini `transition-delay` sungguhan,
+     jadi tidak peduli seberapa cepat elemen digulir masuk. Dipakai
+     untuk baris yang harus datang SETELAH judul di atasnya (lede
+     seksi): keduanya elemen terpisah yang menyentuh ambang 40% hampir
+     bersamaan, jadi tanpa ini mereka larut serentak dan seksinya
+     muncul sebagai satu blok, bukan sebagai kalimat. */
+  html.js .reveal-late {
+    transition-delay: 150ms;
+  }
+
+  /* Riak untuk kisi kartu: anak kedua dan ketiga dari tiap tiga
+     berangkat sedikit belakangan, jadi satu baris tidak menyala
+     sekaligus seperti lampu panggung. Siklusnya tiga karena itu jumlah
+     kolom yang paling sering dipakai di halaman ini. */
+  html.js .stagger > *:nth-child(3n + 2) {
+    transition-delay: 120ms;
+  }
+  html.js .stagger > *:nth-child(3n + 3) {
+    transition-delay: 240ms;
+  }
+
+  /* =================================================================
+     Bilah nav: garis kemajuan gulir + bayangan yang tumbuh.
+
+     Keduanya memakai `scroll()` — timeline dokumen, bukan `view()` yang
+     dipakai reveal. Nav-nya menempel di atas sepanjang halaman, jadi ia
+     tidak punya "masuk" dan "keluar" viewport untuk dijadikan patokan;
+     yang relevan baginya adalah sudah sejauh mana halamannya digulir.
+
+     Bayangannya bukan hiasan: begitu halaman digulir, nav berlatar
+     semi-transparan mulai menumpuk di atas teks yang lewat di baliknya,
+     dan tanpa batas bayangan tepinya kabur ke isi halaman. Di puncak
+     halaman bayangan itu justru tidak diinginkan — di sana tidak ada apa
+     pun di baliknya untuk dipisahkan.
+
+     Tidak ikut dimatikan oleh prefers-reduced-motion: keduanya tidak
+     memindahkan apa pun di bidang pandang, dan garis kemajuan justru
+     salah satu hal yang paling berguna bagi yang mematikan animasi —
+     halaman ini panjang, dan itu satu-satunya isyarat "tinggal berapa
+     lagi" selain batang gulir browser. */
+  @supports (animation-timeline: scroll()) {
+    .nav-elevate {
+      animation: nav-elevate linear both;
+      animation-timeline: scroll(root block);
+      /* Tumbuh penuh dalam 8rem pertama — kira-kira segulir jempol.
+         Lebih panjang dari itu dan bayangannya terbaca sebagai sesuatu
+         yang sedang berubah, bukan sebagai tepi. */
+      animation-range: 0 8rem;
+    }
+
+    .scroll-progress {
+      display: block;
+      position: absolute;
+      inset-inline: 0;
+      /* Menimpa border-b nav, bukan menggantung di bawahnya: garisnya
+         mengisi batas yang sudah ada, jadi tidak ada satu piksel pun
+         yang ditambahkan ke tinggi bilah. */
+      bottom: -1px;
+      height: 2px;
+      transform: scaleX(0);
+      transform-origin: left;
+      background: linear-gradient(
+        90deg,
+        var(--color-accent),
+        var(--color-accent-bright)
+      );
+      animation: scroll-progress linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+
+  @keyframes nav-elevate {
+    from {
+      box-shadow: 0 4px 20px -14px rgb(8 31 59 / 0);
+    }
+    to {
+      box-shadow: 0 4px 20px -14px rgb(8 31 59 / 0.6);
+    }
+  }
+
+  @keyframes scroll-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* =================================================================
+     Layar pembuka: larut masuk saat dibuka, larut pergi saat digulir.
+
+     Layar pertama situs ini cuma lambang, nama, dan slogan — tidak ada
+     yang perlu dibaca ulang setelah dilewati. Jadi alih-alih menggeser
+     ke atas seperti isi halaman biasa, isinya memudar dan menyusut
+     sedikit selama gulir pertama, sementara dua bulatan kabur di
+     latarnya bergerak lebih lambat dari halaman (parallax). Hasilnya
+     perpindahan ke layar berikutnya terbaca sebagai satu gerakan, bukan
+     sebagai dua layar yang ditumpuk.
+
+     Kedatangannya dibuat larut juga, bukan langsung utuh begitu halaman
+     selesai dimuat: `dissolve-in` memudar dari buram+kabur ke tajam
+     dalam waktu tetap (bukan berdasar gulir — pada detik pertama belum
+     ada gulir untuk dijadikan patokan). Dua animasi ini berjalan di
+     jalur (`animation-timeline`) yang berbeda pada elemen yang sama;
+     keduanya digabung lewat singkatan `animation` yang menerima
+     beberapa animasi sekaligus, dipisah koma, dan tiap sub-properti
+     (`-timeline`, `-range`) mengikuti urutan yang sama.
+
+     Patokan larut-pergi-nya `view-timeline-name` di seksinya sendiri,
+     bukan `view()` di tiap anak: anak-anaknya berada di ketinggian yang
+     berbeda-beda, jadi masing-masing akan punya "keluar viewport"
+     sendiri dan memudar bergiliran dari atas ke bawah — persis yang
+     tidak diinginkan untuk sesuatu yang harus larut sebagai satu benda.
+
+     Fase `exit` untuk seksi setinggi layar berarti: 0% = tepat sebelum
+     gulir pertama, 100% = seksinya habis. Jadi rentang di bawah adalah
+     gulir pertama itu sendiri, tanpa perlu menyebut satu pun angka
+     piksel. */
+  .splash {
+    view-timeline-name: --splash;
+  }
+
+  /* Di luar `@supports (animation-timeline: view())`: larut-masuknya
+     berbasis waktu, jadi berjalan di semua browser, termasuk yang
+     belum mendukung animasi bergulir. Yang hilang di sana cuma
+     larut-perginya saat digulir — isinya tetap penuh terbaca. */
+  .splash-exit {
+    animation: dissolve-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @supports (animation-timeline: view()) {
+    .splash-exit {
+      /* Larut masuk (waktu) lalu larut pergi (gulir) — dua animasi,
+         dipisah koma, tiap baris di bawah berpasangan posisi dengan
+         animasi yang sama di baris `animation` ini. */
+      animation:
+        dissolve-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both,
+        splash-exit linear both;
+      /* `auto` untuk dissolve-in = jalur waktu dokumen biasa, dipakai
+         berdampingan dengan jalur gulir bernama --splash. */
+      animation-timeline: auto, --splash;
+      /* Berhenti di 70%: 30% terakhir menyisakan layar bersih sebelum
+         batas seksinya lewat, supaya isi berikutnya tidak masuk sambil
+         menyeret sisa-sisa layar pembuka. */
+      animation-range: normal, exit 8% exit 70%;
+    }
+
+    .splash-drift-far,
+    .splash-drift-near {
+      animation: splash-drift-far linear both;
+      animation-timeline: --splash;
+      animation-range: exit 0% exit 100%;
+    }
+    .splash-drift-near {
+      animation-name: splash-drift-near;
+    }
+
+    /* Isyarat gulir hilang begitu gulirnya dimulai — ia sudah selesai
+       bertugas pada piksel pertama. */
+    .scroll-cue {
+      animation: fade-away linear both;
+      animation-timeline: --splash;
+      animation-range: exit 0% exit 18%;
+    }
+  }
+
+  /* Larut: buram dan sedikit kabur ke tajam penuh — bukan bergeser
+     seperti `.reveal`. Blur-nya kecil (6px) supaya tetap terasa ringan
+     dan profesional, bukan seperti transisi film. */
+  @keyframes dissolve-in {
+    from {
+      opacity: 0;
+      filter: blur(6px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+
+  @keyframes splash-exit {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-2rem) scale(0.96);
+    }
+  }
+
+  /* Bergerak SEARAH gulir (turun) supaya terbaca lebih lambat dari
+     halaman — itu yang membuat latarnya terasa jauh. Yang "far" bergerak
+     lebih banyak. */
+  @keyframes splash-drift-far {
+    from {
+      transform: none;
+    }
+    to {
+      transform: translateY(7rem) scale(1.12);
+    }
+  }
+  @keyframes splash-drift-near {
+    from {
+      transform: none;
+    }
+    to {
+      transform: translateY(3.5rem) scale(1.06);
+    }
+  }
+
+  @keyframes fade-away {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* Titik yang menyusuri garis isyarat gulir. Ini satu-satunya animasi
+     berulang di halaman, dan satu-satunya yang jalan berdasar waktu:
+     ia harus bergerak SEBELUM pengunjung menggulir — kalau ia menunggu
+     gulir, ia tidak pernah sempat menyarankan apa pun.
+
+     Aturan prefers-reduced-motion di @layer base sudah mematikannya
+     lewat animation-duration; yang tersisa cuma garis diamnya. */
+  .scroll-cue-track {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-line);
+  }
+  .scroll-cue-track::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    height: 45%;
+    background-color: var(--color-accent);
+    animation: scroll-cue-travel 2.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+
+  @keyframes scroll-cue-travel {
+    0% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    30%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(222%);
+      opacity: 0;
+    }
+  }
+
+  /* =================================================================
+     Kurva produktivitas yang menggambar dirinya sendiri saat dibaca.
+
+     Satu-satunya animasi di halaman ini yang isinya bukan sekadar
+     "muncul": garis biru ditarik dari kiri ke kanan, dan seksi tempat
+     ia berada memang sedang menjelaskan sebuah garis yang naik. Kalau
+     ada satu tempat di situs ini yang pantas dianimasikan, ini tempatnya.
+
+     Digambar lewat `stroke-dashoffset` di atas `pathLength="1"` yang
+     dipasang di SVG-nya (lihat marketing/curve.tsx) — dengan panjang
+     lintasan dinormalkan ke 1, panjang path-nya tidak perlu dihitung
+     dan tidak ikut berubah kalau titik datanya diubah.
+
+     Garis putus-putus "manual" TIDAK ikut digambar: `stroke-dasharray`
+     di sana sudah dipakai untuk membuatnya putus-putus, dan menganimasi
+     offset-nya cuma membuat putus-putusnya berbaris jalan — gerak yang
+     ramai dan tidak berarti apa-apa. Ia cukup memudar masuk sebagai
+     garis pembanding yang diam. */
+  .curve {
+    view-timeline-name: --curve;
+  }
+
+  @supports (animation-timeline: view()) {
+    .curve-line {
+      stroke-dasharray: 1;
+      animation: curve-draw linear both;
+      animation-timeline: --curve;
+      animation-range: entry 15% entry 75%;
+    }
+
+    .curve-area,
+    .curve-baseline {
+      animation: fade-in linear both;
+      animation-timeline: --curve;
+      animation-range: entry 15% entry 60%;
+    }
+
+    /* Titik ujung menyusul setelah garisnya hampir sampai — bulatan yang
+       sudah menunggu di ujung membocorkan ke mana garisnya menuju.
+
+       Keyframe-nya sendiri, bukan `reveal-pop` seperti angka di halaman:
+       di dalam SVG, `translateY(1.25rem)` milik reveal-pop diukur dalam
+       satuan viewBox (20 dari 260) — lompatan sejauh hampir sepertiga
+       tinggi grafik untuk bulatan berjari-jari 4. Di sini cukup
+       membesar. */
+    .curve-dot {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: curve-dot-in linear both;
+      animation-range: entry 65% entry 85%;
+      animation-timeline: --curve;
+    }
+  }
+
+  @keyframes curve-dot-in {
+    from {
+      opacity: 0;
+      transform: scale(0.2);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes curve-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   /* Label kecil huruf besar bermonospace — motif khas proposal
      ("01 · FILOSOFI", "TRACK: BUSINESS OPERATIONAL"). */
   .eyebrow {
@@ -261,8 +875,11 @@
     background-color: var(--color-ink);
     color: var(--color-ink-inverse);
   }
+  /* Bukan #000 seperti waktu tintanya cokelat: Deep Navy yang menuju
+     hitam kehilangan birunya persis di saat tombolnya sedang dilihat.
+     Ini navy yang sama, cuma diturunkan terangnya. */
   .btn-primary:hover:not(:disabled) {
-    background-color: #000;
+    background-color: #04162c;
   }
 
   .btn-accent {
@@ -287,7 +904,7 @@
     color: #fff;
   }
   .btn-danger:hover:not(:disabled) {
-    background-color: #8a2f23;
+    background-color: #991b1b;
   }
 
   .badge {
@@ -331,7 +948,7 @@
   .prose-note h3,
   .prose-note h4,
   .prose-note h5 {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-weight: 600;
     line-height: 1.3;
     /* Jarak atas jauh lebih besar dari jarak bawah: judul menempel pada

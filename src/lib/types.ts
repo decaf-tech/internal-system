@@ -333,6 +333,31 @@ export type ProspectWithRelations = Prospect & {
   client: Pick<Client, "id" | "name"> | null;
 };
 
+/**
+ * Satu isian form "sesi discovery gratis" dari situs publik.
+ *
+ * Sengaja BUKAN `Prospect`: isian dari internet belum diverifikasi siapa
+ * pun, dan papan pipeline berhenti berguna kalau isinya bercampur dengan
+ * nomor asal ketik. Baris ini naik jadi prospek lewat tombol di
+ * `/backoffice/clients`, bukan otomatis (migration 013).
+ */
+export type DiscoveryRequest = {
+  id: string;
+  phone: string;
+  /** Bidang atau jenis bisnisnya, seperti yang ia tulis sendiri. */
+  business: string;
+  /** Yang ingin dibenahi — pembuka obrolan pertama. */
+  interest: string;
+  status: DiscoveryRequestStatus;
+  /** Terisi setelah dikonversi; barisnya tetap tinggal sebagai jejak. */
+  prospect_id: string | null;
+  handled_by: string | null;
+  handled_at: string | null;
+  created_at: string;
+};
+
+export type DiscoveryRequestStatus = "baru" | "diproses" | "arsip";
+
 export type ExpenseWithRelations = Expense & {
   submitter: Pick<Profile, "id" | "full_name"> | null;
   reviewer: Pick<Profile, "id" | "full_name"> | null;
@@ -527,7 +552,8 @@ export type ActivityEntityType =
   | "label"
   | "folder"
   | "document"
-  | "company_settings";
+  | "company_settings"
+  | "discovery_request";
 
 export type ActivityLogEntry = {
   id: string;

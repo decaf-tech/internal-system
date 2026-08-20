@@ -1,0 +1,23 @@
+# Dijalankan di server-merah-supermicro. Selalu dengan --env-file supaya
+# satu file yang sama mengisi dua hal sekaligus: build args NEXT_PUBLIC_*
+# (di-inline ke bundle browser saat build) dan environment container
+# (dibaca server saat runtime).
+#
+#   docker compose --env-file .env.production up -d --build
+#
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    container_name: decaf-internal-system
+    restart: unless-stopped
+    # Hanya loopback. Yang menghadap internet adalah Cloudflare Tunnel,
+    # bukan port ini — konsisten dengan pagar akses di blueprint §0B.3.
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env.production

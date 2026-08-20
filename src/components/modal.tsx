@@ -12,6 +12,7 @@ export function Modal({
   onClose,
   title,
   wide = false,
+  closeLabel = "Tutup",
   children,
 }: {
   open: boolean;
@@ -22,6 +23,12 @@ export function Modal({
    * pratinjau dokumen — bukan untuk form, yang justru lebih enak sempit.
    */
   wide?: boolean;
+  /**
+   * Label tombol tutup untuk pembaca layar. Ada karena situs publik
+   * berbahasa Inggris juga memakai modal ini; backoffice yang cuma
+   * berbahasa Indonesia membiarkannya di nilai bawaan.
+   */
+  closeLabel?: string;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -64,7 +71,7 @@ export function Modal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup"
+          aria-label={closeLabel}
           className="icon-btn"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

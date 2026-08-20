@@ -28,7 +28,7 @@ import {
  * project, tugas, catatan, rapat, dan tagihan — jadi tinggal di
  * `lib/actions` bersama `documents.ts`, bukan di folder satu halaman.
  * Pengelolaan templatenya sendiri (tambah/ubah/hapus) ada di
- * `app/(app)/documents/templates/actions.ts`, karena cuma dipakai halaman
+ * `app/backoffice/documents/templates/actions.ts`, karena cuma dipakai halaman
  * itu.
  */
 
