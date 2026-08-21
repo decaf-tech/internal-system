@@ -27,7 +27,12 @@ urutannya. Dua hal yang mengikat kalau menyentuh deployment:
 **deploy HANYA lewat Portainer → Stacks → Pull and redeploy**, jangan
 `docker compose up` dari folder repo di server (`container_name` dikunci,
 dua compose project berebut nama yang sama dan yang kedua selalu ditolak
-— §5.1 di sana); dan `output: "standalone"` di `next.config.ts` masih
+— §5.1 di sana). Portainer men-deploy dari snapshot/tarball, bukan
+`git clone` — **commit yang MENGHAPUS berkas** butuh `sudo rm` manual di
+`/var/lib/docker/volumes/portainer_data/_data/compose/2/<path-berkas>`
+di server sebelum redeploy berhasil, tiap kali terjadi (§6.7, ditolak
+diganti ke cron `git reset --hard` — jangan tawarkan ulang tanpa diminta).
+Selain itu, `output: "standalone"` di `next.config.ts` masih
 dimatikan saat `process.env.VERCEL` ada, karena Vercel merakit lambda
 dari `.next/next-server.js.nft.json` yang tidak pernah ditulis mode
 standalone (build gagal ENOENT). Pagar itu dilepas jadi
