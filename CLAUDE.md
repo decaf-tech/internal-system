@@ -17,24 +17,28 @@ Lalu `docs/PRD v3.3.md` — identitas perusahaan (nama, rekening bank,
 kode dokumen) pindah dari env var ke tabel `company_settings`, diubah
 lewat halaman Dokumen → Perusahaan; `src/lib/env.ts` TIDAK lagi punya
 `company()`, baca lewat `getCompanySettings()` di `src/lib/company.ts`.
-Lalu `docs/PRD v3.4.md` — rencana migrasi deployment dari Vercel ke
-server sendiri (`server-merah-supermicro`), domain lewat Cloudflare.
-**Belum dieksekusi** — domain `decaf.id` sudah dibeli (20 Agustus 2026),
-jadi penghalang di §10 sudah lepas dan migrasi ini yang berikutnya
-dikerjakan; §10 di sana yang memegang urutan mulainya. Berkas
-`Dockerfile`/`docker-compose.yml`/`output: "standalone"` di repo berasal
-dari rencana itu, belum pernah di-build. `output: "standalone"` di
-`next.config.ts` sengaja dimatikan saat `process.env.VERCEL` ada:
-Vercel merakit lambda dari `.next/next-server.js.nft.json`, dan mode
-standalone tidak pernah menulis berkas itu — buildnya gagal ENOENT.
-Begitu Vercel ditinggalkan, pagar itu dilepas jadi `output: "standalone"`
-biasa.
+Lalu `docs/PRD v3.4.md` — migrasi deployment dari Vercel ke server
+sendiri (`server-merah-supermicro`), domain lewat Cloudflare.
+**Sudah dieksekusi 20 Agustus 2026: aplikasi live di `https://decaf.id`**
+(situs publik di `/`, backoffice di `/backoffice` — satu domain, satu
+container, tanpa subdomain). Yang tersisa cuma §5 langkah 9, melepas
+Vercel, sengaja ditunda beberapa hari; §10 di sana yang memegang
+urutannya. Dua hal yang mengikat kalau menyentuh deployment:
+**deploy HANYA lewat Portainer → Stacks → Pull and redeploy**, jangan
+`docker compose up` dari folder repo di server (`container_name` dikunci,
+dua compose project berebut nama yang sama dan yang kedua selalu ditolak
+— §5.1 di sana); dan `output: "standalone"` di `next.config.ts` masih
+dimatikan saat `process.env.VERCEL` ada, karena Vercel merakit lambda
+dari `.next/next-server.js.nft.json` yang tidak pernah ditulis mode
+standalone (build gagal ENOENT). Pagar itu dilepas jadi
+`output: "standalone"` biasa begitu langkah 9 dijalankan.
 Lalu `docs/PRD v3.5.md` — situs publik di `/`: form sesi discovery
 (menggantikan tombol yang melompat ke WhatsApp), tabel
 `discovery_requests` + kotak masuknya di `/backoffice/clients`, dan
 identitas tipografi pindah dari Fraunces ke Fredoka. Migration `013`
-**belum dijalankan** ke database asli — sampai itu terjadi, form di situs
-publik selalu gagal kirim (§6 di sana).
+**sudah dijalankan** ke database asli (20 Agustus 2026), jadi form sesi
+discovery di situs publik berfungsi — catatan "belum dijalankan" di §6
+dokumen itu sudah kedaluwarsa.
 
 **Identitas visual sekarang tidak lagi seperti yang ditulis v3.5.** Sejak
 19 Agustus 2026 ada logo sungguhan dan palet warna resmi, jadi bagian
