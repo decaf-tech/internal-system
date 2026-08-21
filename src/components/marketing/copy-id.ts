@@ -78,7 +78,7 @@ export const ID: SiteCopy = {
     ],
     empowering: {
       title: "Empowering Technology",
-      body: "Teknologi yang tepat tidak menciptakan ketergantungan baru. Ia melipatgandakan kapasitas manusia yang sudah ada.",
+      body: "Teknologi yang tepat tidak menciptakan ketergantungan baru — ia melipatgandakan kapasitas yang sudah dimiliki tim Anda. Sehingga, dapat memaksimalkan dua variabel waktu dan hasil menjadi dengan waktu yang lebih singkat dapat menghasilkan hasil yang lebih baik",
     },
     // Craft dulu: empati dan pemahaman konteks masalah, baru solusinya
     // dirancang. Tech belakangan: teknologi bukan tujuan, dan tidak semua
@@ -86,17 +86,8 @@ export const ID: SiteCopy = {
     // tepat, dipadukan dengan empati dan konteks tadi.
     craft: {
       title: "Craft First, Tech Second",
-      body: "Craft dulu — empati dan pemahaman kontekstual atas masalah, supaya solusinya juga kontekstual. Tech belakangan — kami percaya tidak semua masalah harus “diteknologikan”, apalagi dengan yang paling canggih. Kadang yang dibutuhkan cuma yang tepat, dipadukan dengan empati dan konteks tadi.",
+      body: "Craft terlebih dahulu — empati dan pemahaman konteks atas masalah, agar solusinya turut kontekstual. Tech kemudian, karena tidak semua masalah memerlukan solusi teknologi — terkadang hanya butuh pendekatan yang tepat sudah memadai.",
     },
-  },
-
-  curve: {
-    ariaLabel:
-      "Grafik perbandingan: pada usaha yang sama, operasional manual naik landai sementara sistem yang tepat naik jauh lebih curam.",
-    axisX: "USAHA / WAKTU →",
-    axisY: "↑ HASIL",
-    legendEmpowered: "Sistem yang memperkuat",
-    legendManual: "Operasional manual",
   },
 
   services: {

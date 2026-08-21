@@ -80,21 +80,12 @@ export const EN: SiteCopy = {
     ],
     empowering: {
       title: "Empowering Technology",
-      body: "The right technology does not create a new dependency. It multiplies the human capacity that is already there.",
+      body: "The right technology does not create a new dependency — it multiplies the capacity your team already possesses. As a result, it maximizes both variables at once: time and output, delivering better outcomes in less time.",
     },
     craft: {
       title: "Craft First, Tech Second",
-      body: "Craft comes first — empathy and a contextual grasp of the problem, so the solution is contextual too. Tech comes second — we do not believe every problem should be “technologised”, least of all with the most advanced tool available. Often what is needed is simply the right one, paired with that empathy and context.",
+      body: "Craft comes first — empathy and a genuine understanding of the problem, so the solution remains contextual as well. Tech comes second, as not every problem requires a technological solution — at times, the right approach alone suffices.",
     },
-  },
-
-  curve: {
-    ariaLabel:
-      "Comparison chart: for the same effort, manual operations climb slowly while the right system climbs far more steeply.",
-    axisX: "EFFORT / TIME →",
-    axisY: "↑ OUTPUT",
-    legendEmpowered: "A system that empowers",
-    legendManual: "Manual operations",
   },
 
   services: {

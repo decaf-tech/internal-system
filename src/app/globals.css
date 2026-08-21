@@ -262,11 +262,7 @@
     .splash-exit,
     .splash-drift-far,
     .splash-drift-near,
-    .scroll-cue,
-    .curve-line,
-    .curve-area,
-    .curve-baseline,
-    .curve-dot {
+    .scroll-cue {
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
@@ -277,14 +273,6 @@
          tidak memakai filter sama sekali, jadi baris ini tidak
          berpengaruh apa-apa buat mereka. */
       filter: none !important;
-    }
-
-    /* Kurvanya digambar dengan menggeser dash, jadi mengembalikan
-       `transform` saja tidak cukup — tanpa baris ini garisnya tetap
-       tergeser habis alias tidak kelihatan sama sekali. */
-    .curve-line {
-      stroke-dasharray: none !important;
-      stroke-dashoffset: 0 !important;
     }
   }
 }
@@ -630,89 +618,6 @@
     100% {
       transform: translateY(222%);
       opacity: 0;
-    }
-  }
-
-  /* =================================================================
-     Kurva produktivitas yang menggambar dirinya sendiri saat dibaca.
-
-     Satu-satunya animasi di halaman ini yang isinya bukan sekadar
-     "muncul": garis biru ditarik dari kiri ke kanan, dan seksi tempat
-     ia berada memang sedang menjelaskan sebuah garis yang naik. Kalau
-     ada satu tempat di situs ini yang pantas dianimasikan, ini tempatnya.
-
-     Digambar lewat `stroke-dashoffset` di atas `pathLength="1"` yang
-     dipasang di SVG-nya (lihat marketing/curve.tsx) — dengan panjang
-     lintasan dinormalkan ke 1, panjang path-nya tidak perlu dihitung
-     dan tidak ikut berubah kalau titik datanya diubah.
-
-     Garis putus-putus "manual" TIDAK ikut digambar: `stroke-dasharray`
-     di sana sudah dipakai untuk membuatnya putus-putus, dan menganimasi
-     offset-nya cuma membuat putus-putusnya berbaris jalan — gerak yang
-     ramai dan tidak berarti apa-apa. Ia cukup memudar masuk sebagai
-     garis pembanding yang diam. */
-  .curve {
-    view-timeline-name: --curve;
-  }
-
-  @supports (animation-timeline: view()) {
-    .curve-line {
-      stroke-dasharray: 1;
-      animation: curve-draw linear both;
-      animation-timeline: --curve;
-      animation-range: entry 15% entry 75%;
-    }
-
-    .curve-area,
-    .curve-baseline {
-      animation: fade-in linear both;
-      animation-timeline: --curve;
-      animation-range: entry 15% entry 60%;
-    }
-
-    /* Titik ujung menyusul setelah garisnya hampir sampai — bulatan yang
-       sudah menunggu di ujung membocorkan ke mana garisnya menuju.
-
-       Keyframe-nya sendiri, bukan `reveal-pop` seperti angka di halaman:
-       di dalam SVG, `translateY(1.25rem)` milik reveal-pop diukur dalam
-       satuan viewBox (20 dari 260) — lompatan sejauh hampir sepertiga
-       tinggi grafik untuk bulatan berjari-jari 4. Di sini cukup
-       membesar. */
-    .curve-dot {
-      transform-box: fill-box;
-      transform-origin: center;
-      animation: curve-dot-in linear both;
-      animation-range: entry 65% entry 85%;
-      animation-timeline: --curve;
-    }
-  }
-
-  @keyframes curve-dot-in {
-    from {
-      opacity: 0;
-      transform: scale(0.2);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  @keyframes curve-draw {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
     }
   }
 

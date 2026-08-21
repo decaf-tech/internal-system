@@ -115,14 +115,6 @@ export type SiteCopy = {
     craft: { title: string; body: string };
   };
 
-  curve: {
-    ariaLabel: string;
-    axisX: string;
-    axisY: string;
-    legendEmpowered: string;
-    legendManual: string;
-  };
-
   services: {
     eyebrow: string;
     title: string;

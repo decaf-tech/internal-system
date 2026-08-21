@@ -28,15 +28,3 @@ export const CONTACT = {
 export function waLink(message: string) {
   return `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(message)}`;
 }
-
-/**
- * Dua kurva di grafik "menggeser kurva produktivitas".
- *
- * Nilainya sengaja tanpa satuan — sumbu X waktu/usaha, sumbu Y hasil. Ini
- * ilustrasi bentuk hubungan, bukan data terukur, dan grafiknya diberi label
- * yang mengatakan begitu supaya tidak terbaca sebagai klaim.
- */
-export const CURVE = {
-  manual: [0, 5, 10, 14, 18, 21, 24],
-  empowered: [0, 18, 45, 68, 82, 91, 96],
-} as const;

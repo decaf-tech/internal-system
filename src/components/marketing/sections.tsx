@@ -1,7 +1,6 @@
 import { LogoMark } from "@/components/brand";
 import { waLink } from "./content";
 import { COPY, discoveryProps, type Lang, type Outcome } from "./copy";
-import { ProductivityCurve } from "./curve";
 import { DiscoveryButton } from "./discovery";
 import { Container, Eyebrow, Lede, Section, SectionTitle } from "./shell";
 
@@ -166,31 +165,29 @@ export function Philosophy({ lang }: { lang: Lang }) {
       <Eyebrow>{copy.eyebrow}</Eyebrow>
       <SectionTitle>{copy.title}</SectionTitle>
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div>
-          <p className="text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base">
-            {copy.body[0]}
-          </p>
-          <p className="mt-4 text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base">
-            {copy.body[1]}
-          </p>
+      <div className="mt-10 max-w-2xl">
+        <p className="text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base">
+          {copy.body[0]}
+        </p>
+        <p className="mt-4 text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base">
+          {copy.body[1]}
+        </p>
+      </div>
 
-          <div className="reveal mt-8 rounded-lg bg-accent p-5 text-ink-inverse sm:p-6">
-            <p className="display text-xl">{copy.empowering.title}</p>
-            <p className="mt-2 text-sm leading-relaxed text-white/85">
-              {copy.empowering.body}
-            </p>
-          </div>
-
-          <div className="reveal mt-5 rounded-lg border border-line-strong bg-surface-muted p-5 sm:p-6">
-            <p className="display text-xl">{copy.craft.title}</p>
-            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-              {copy.craft.body}
-            </p>
-          </div>
+      <div className="stagger mt-8 grid gap-5 md:grid-cols-2">
+        <div className="reveal rounded-lg bg-accent p-5 text-ink-inverse sm:p-6">
+          <p className="display text-xl">{copy.empowering.title}</p>
+          <p className="mt-2 text-sm leading-relaxed text-white/85">
+            {copy.empowering.body}
+          </p>
         </div>
 
-        <ProductivityCurve copy={COPY[lang].curve} />
+        <div className="reveal rounded-lg border border-line-strong bg-surface-muted p-5 sm:p-6">
+          <p className="display text-xl">{copy.craft.title}</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            {copy.craft.body}
+          </p>
+        </div>
       </div>
     </Section>
   );
