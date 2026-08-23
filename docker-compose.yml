@@ -29,3 +29,12 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN}
       GOOGLE_DRIVE_ROOT_FOLDER_ID: ${GOOGLE_DRIVE_ROOT_FOLDER_ID}
+      # Panel infrastruktur di /backoffice/admin. Semuanya opsional —
+      # `:-` memberi nilai kosong kalau variabelnya tidak didaftarkan di
+      # stack, supaya compose tidak menolak deploy cuma karena panel
+      # pelengkap ini belum diisi.
+      BESZEL_EMAIL: ${BESZEL_EMAIL:-}
+      BESZEL_PASSWORD: ${BESZEL_PASSWORD:-}
+      UPTIME_KUMA_API_KEY: ${UPTIME_KUMA_API_KEY:-}
+      BESZEL_URL: ${BESZEL_URL:-}
+      UPTIME_KUMA_URL: ${UPTIME_KUMA_URL:-}

@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import { PageHeader, EmptyState } from "@/components/page-header";
+import { SkeletonListCard } from "@/components/skeleton";
 import { formatDateTime } from "@/lib/format";
 import type { ActivityLogWithActor, Profile } from "@/lib/types";
 import { MemberRow } from "./admin-ui";
+import { InfraPanel } from "./infra-tools";
 
 const ACTIVITY_LIMIT = 150;
 
@@ -113,6 +116,22 @@ export default async function AdminPage({
             </ul>
           )}
         </section>
+      </div>
+
+      {/* Di balik Suspense karena isinya menunggu dua layanan lain di
+          jaringan: keduanya berbatas 4 detik, dan tanpa pembatas ini
+          seluruh dashboard admin ikut menunggu selama itu tiap kali dibuka. */}
+      <div className="mt-4">
+        <Suspense
+          fallback={
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SkeletonListCard title="Kesehatan Server" rows={2} />
+              <SkeletonListCard title="Pemantauan Layanan" rows={3} />
+            </div>
+          }
+        >
+          <InfraPanel />
+        </Suspense>
       </div>
     </>
   );
