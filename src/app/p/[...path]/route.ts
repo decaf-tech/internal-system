@@ -48,30 +48,21 @@ export async function GET(
   // menunggu sampai dipublikasikan.
   if (!data) return notFound();
 
-  const url = new URL(request.url);
   const basePath = `/p/${encodeURIComponent(slug)}/`;
 
-  // Akar prototipe HARUS berakhir garis miring. Tanpa itu browser
-  // menganggap `<slug>` sebagai nama berkas, dan `href="style.css"` di
-  // dalam halaman diselesaikan jadi `/p/style.css` — di luar prototipe
-  // mana pun. Redirect permanen, karena inilah alamat yang sebenarnya.
-  if (rest.length === 0 && !url.pathname.endsWith("/")) {
-    // BUKAN `new URL(..., url)` — origin bawaan `request.url` di balik
-    // Cloudflare Tunnel adalah alamat bind container sendiri
-    // (`0.0.0.0:3000`, dari `HOSTNAME`/`PORT` di Dockerfile), bukan
-    // `decaf.id`. Ini kelas masalah yang sama dengan Origin/Host di
-    // server action (PRD v3.4 §6.1) — pola perbaikannya sama seperti
-    // `publicOrigin()` di halaman daftar backoffice: baca host & protokol
-    // sebenarnya dari header yang diteruskan tunnel, jangan percaya
-    // origin yang sudah dihitung Next.js sendiri.
-    const forwardedHost =
-      request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-    const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
-    const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : url.origin;
-
-    return Response.redirect(new URL(`${basePath}${url.search}`, origin), 308);
-  }
-
+  // TIDAK ada redirect untuk menambah garis miring akhir di sini — itu
+  // pernah dicoba dan berakhir baku-tembak dengan perilaku bawaan
+  // Next.js sendiri: `trailingSlash` defaultnya `false`, jadi Next.js
+  // MEMBUANG garis miring akhir pada permintaan apa pun yang punya itu,
+  // sementara redirect di sini justru MENAMBAHKANNYA — dua-duanya saling
+  // redirect tanpa henti.
+  //
+  // Untungnya redirect itu tidak pernah perlu ada: `<base href>` yang
+  // disisipkan `prepareHtml()` (lihat lib/prototypes/html.ts) menentukan
+  // bagaimana path relatif di dalam HTML diselesaikan, TIDAK BERGANTUNG
+  // pada apakah URL asli di address bar berakhir garis miring atau tidak.
+  // `/p/<slug>` dan `/p/<slug>/` sama-sama menyajikan entry point yang
+  // sama, dengan hasil yang identik.
   const requestPath = rest.length === 0 ? data.entry_point : rest.join("/");
 
   const asset = await findAsset(data.id, requestPath);
