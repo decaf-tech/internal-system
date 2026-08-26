@@ -48,7 +48,7 @@ export async function GET(
   // menunggu sampai dipublikasikan.
   if (!data) return notFound();
 
-  const basePath = `/p/${encodeURIComponent(slug)}/`;
+  const rootPath = `/p/${encodeURIComponent(slug)}`;
 
   // TIDAK ada redirect untuk menambah garis miring akhir di sini — itu
   // pernah dicoba dan berakhir baku-tembak dengan perilaku bawaan
@@ -88,9 +88,19 @@ export async function GET(
   });
 
   if (isHtmlPath(asset.relativePath)) {
+    // `<base>` menunjuk folder DOKUMEN INI, bukan akar prototipe — supaya
+    // `href="../people/"` di dalam `hr/attendance/index.html` diselesaikan
+    // dari `hr/attendance/`, persis seperti kalau prototipenya dihosting
+    // di akar domainnya sendiri.
+    const directory = asset.relativePath.slice(
+      0,
+      asset.relativePath.lastIndexOf("/") + 1,
+    );
+
     const html = prepareHtml(
       (await readAsset(asset.absolutePath)).toString("utf8"),
-      basePath,
+      rootPath,
+      `${rootPath}/${encodeURI(directory)}`,
     );
     return new Response(html, { headers });
   }

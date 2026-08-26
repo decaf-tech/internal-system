@@ -13,41 +13,61 @@ const BADGE_ID = "decaf-prototype-badge";
 
 /**
  * Prototipe disajikan dari sebuah sub-path (`/p/<slug>/`), bukan dari akar
- * domain seperti tempatnya di-build. Dua kebiasaan build harus dijembatani:
+ * domain seperti tempatnya di-build. Tiga kebiasaan build harus dijembatani,
+ * dan masing-masing butuh alat yang berbeda:
  *
- *  1. Path RELATIF (`href="style.css"`) — ditangani `<base>`, asalkan URL
- *     halamannya berakhir garis miring. Route penyaji yang mengurus itu
- *     lewat redirect 308.
+ *  1. Path RELATIF (`href="style.css"`) — ditangani `<base>`.
  *
- *  2. Path ROOT-ABSOLUTE (`src="/assets/index-a1b2.js"`) — `<base>` tidak
- *     berpengaruh sama sekali di sini, karena garis miring di depan berarti
- *     "dari akar domain" dan mengabaikan base. Ini bawaan Vite dan CRA,
- *     jadi tanpa penanganan, hampir semua build React yang dijatuhkan ke
- *     sini akan tampil sebagai halaman putih. Karena itu atribut-atribut
- *     itu ditulis ulang dengan awalan prototipenya.
+ *  2. Path ROOT-ABSOLUTE di dalam HTML (`src="/assets/index.js"`) —
+ *     `<base>` tidak berpengaruh, karena garis miring di depan berarti
+ *     "dari akar domain". Ditangani `rewriteAbsolutePaths` di server.
  *
- * Yang tidak tertutup: path absolut yang dirakit DI DALAM JavaScript saat
- * berjalan (`fetch("/api/…")`, impor dinamis yang jalurnya dihitung).
- * Menambal itu berarti menulis ulang isi berkas JS, dan hasilnya adalah
- * tebakan yang kadang benar — lebih buruk daripada batas yang jelas.
- * `warnAboutAbsolutePaths` di bawah dipakai halaman backoffice untuk
- * mengatakannya di muka, bukan membiarkannya jadi kejutan di depan klien.
+ *  3. Path ROOT-ABSOLUTE yang dirakit JAVASCRIPT saat berjalan — menu yang
+ *     dibangun lewat `innerHTML`, `fetch("/data.json")`. Tidak terlihat
+ *     sama sekali oleh nomor 2, karena saat HTML dikirim path itu belum
+ *     ada; ia baru lahir di browser. Ditangani `runtimeShim` di bawah.
+ *
+ * Nomor 3 awalnya sengaja dibiarkan terbuka sebagai batas yang jujur, dengan
+ * alasan "menulis ulang isi berkas JS hasilnya tebakan". Prototipe sungguhan
+ * yang pertama masuk langsung menabraknya: seluruh menu sampingnya dirakit
+ * `app.js` dengan `href="/index.html"`, jadi setiap tautan navigasi mendarat
+ * di akar decaf.id. Shim itu menyelesaikannya tanpa menyentuh isi berkas JS
+ * sama sekali — yang diperbaiki adalah HASILNYA di DOM, bukan sumbernya.
+ *
+ * @param rootPath  akar prototipe tanpa garis miring akhir, mis. `/p/toko`
+ * @param basePath  folder dokumen yang sedang disajikan, dengan garis miring
+ *                  akhir, mis. `/p/toko/hr/attendance/`
  */
-export function prepareHtml(html: string, basePath: string): string {
+export function prepareHtml(
+  html: string,
+  rootPath: string,
+  basePath: string,
+): string {
   // Urutannya mengikat, dan pernah salah sekali: penulisan ulang path
   // absolut harus SELESAI sebelum apa pun milik kita disisipkan. Kalau
   // `<base href="/p/slug/">` masuk lebih dulu, ia sendiri ikut terbelokkan
   // jadi `/p/slug/p/slug/` — dan setiap aset ber-path relatif di seluruh
   // prototipe berakhir 404. Hal yang sama berlaku untuk logo di badge.
-  return injectBadge(injectHead(rewriteAbsolutePaths(html, basePath), basePath));
+  return injectBadge(
+    injectHead(rewriteAbsolutePaths(html, rootPath), rootPath, basePath),
+  );
 }
 
 /**
- * Sisipkan `<base>` dan `<meta name="robots">` di awal `<head>`.
+ * Sisipkan `<base>`, `<meta name="robots">`, dan shim runtime di awal
+ * `<head>`.
  *
  * `<base>` harus mendahului tag mana pun yang memuat sesuatu — begitu
  * browser bertemu `<link href="style.css">`, URL-nya sudah diselesaikan,
- * dan `<base>` yang datang belakangan tidak menariknya kembali.
+ * dan `<base>` yang datang belakangan tidak menariknya kembali. Shim juga
+ * harus di sini, sebelum skrip prototipe mana pun sempat jalan.
+ *
+ * Nilai `<base>` adalah folder DOKUMEN YANG SEDANG DISAJIKAN, bukan akar
+ * prototipe. Untuk `hr/attendance/index.html`, sebuah `href="../people/"`
+ * di dalamnya harus diselesaikan dari `hr/attendance/`, persis seperti
+ * kalau prototipe itu dihosting di akar domainnya sendiri. Memasang akar
+ * prototipe di sini akan membuat setiap tautan relatif di sub-folder
+ * meleset sejauh kedalaman foldernya.
  *
  * `noindex` di sini adalah lapis kedua; lapis utamanya header
  * `X-Robots-Tag` di route penyaji. Keduanya ada karena keduanya gagal
@@ -55,10 +75,11 @@ export function prepareHtml(html: string, basePath: string): string {
  * disajikan ulang dari tempat lain, meta hilang kalau yang dibaca crawler
  * cuma header respons.
  */
-function injectHead(html: string, basePath: string): string {
+function injectHead(html: string, rootPath: string, basePath: string): string {
   const tags =
     `<base href="${escapeAttribute(basePath)}">` +
-    `<meta name="robots" content="noindex, nofollow">`;
+    `<meta name="robots" content="noindex, nofollow">` +
+    runtimeShim(rootPath);
 
   const headMatch = html.match(/<head[^>]*>/i);
   if (headMatch?.index !== undefined) {
@@ -79,20 +100,18 @@ function injectHead(html: string, basePath: string): string {
 
 /**
  * Ubah `src="/x"`, `href="/x"`, dan `srcset` yang root-absolute jadi
- * `<basePath>x`.
+ * `<rootPath>/x`.
  *
  * Dibatasi pada nilai yang diawali TEPAT satu garis miring: `//cdn.tld/x`
  * adalah URL protocol-relative ke host lain, dan menulis ulangnya akan
  * mengubah alamat orang lain jadi path lokal yang tidak ada.
  */
-function rewriteAbsolutePaths(html: string, basePath: string): string {
-  const prefix = basePath.replace(/\/$/, "");
-
+function rewriteAbsolutePaths(html: string, rootPath: string): string {
   return html
     .replace(
-      /\b(src|href|poster|data-src)=(["'])\/(?!\/)([^"']*)\2/gi,
+      /\b(src|href|poster|action|data-src)=(["'])\/(?!\/)([^"']*)\2/gi,
       (_match, attribute, quote, rest) =>
-        `${attribute}=${quote}${prefix}/${rest}${quote}`,
+        `${attribute}=${quote}${rootPath}/${rest}${quote}`,
     )
     .replace(
       /\b(srcset|data-srcset)=(["'])([^"']*)\2/gi,
@@ -103,7 +122,7 @@ function rewriteAbsolutePaths(html: string, basePath: string): string {
           .map((candidate) =>
             candidate.replace(
               /^(\s*)\/(?!\/)/,
-              (_m, space: string) => `${space}${prefix}/`,
+              (_m, space: string) => `${space}${rootPath}/`,
             ),
           )
           .join(",");
@@ -116,7 +135,72 @@ function rewriteAbsolutePaths(html: string, basePath: string): string {
 }
 
 /**
- * Tempelkan tanda "Dibuat oleh Decaf" di pojok kanan bawah.
+ * Skrip kecil yang membetulkan path root-absolute yang lahir SETELAH
+ * halaman dikirim.
+ *
+ * Cara kerjanya sengaja bukan "tulis ulang berkas JS-nya", melainkan
+ * mengamati DOM: sebuah `MutationObserver` menangkap setiap elemen yang
+ * masuk atau atribut yang berubah, lalu membetulkan `href`/`src`-nya di
+ * tempat. Itu yang membuatnya bekerja untuk menu yang dirakit `innerHTML`
+ * tanpa perlu menebak-nebak isi kode orang. `fetch` dan `XMLHttpRequest`
+ * ikut dibungkus untuk permintaan data yang jalurnya absolut.
+ *
+ * Pemasangannya idempoten — nilai yang sudah berawalan `rootPath`
+ * dikembalikan apa adanya, jadi `setAttribute` di dalam observer tidak
+ * memicu putaran tak berujung lewat mutasi yang ia sebabkan sendiri.
+ *
+ * Badge Decaf dikecualikan: logonya menunjuk `/brand/logo-icon.png` milik
+ * aplikasi ini, bukan milik prototipe, dan tanpa pengecualian ini shim akan
+ * dengan patuh membelokkannya ke dalam folder prototipe lalu menampilkan
+ * gambar rusak di setiap halaman.
+ *
+ * Yang tetap di luar jangkauan: penugasan langsung ke `location.href` dan
+ * `window.open` (keduanya tidak bisa dicegat tanpa mengambil alih navigasi),
+ * serta prototipe yang memasang Content-Security-Policy ketat lewat `<meta>`
+ * — skrip sebaris akan diblokir CSP-nya sendiri.
+ */
+function runtimeShim(rootPath: string): string {
+  const root = JSON.stringify(rootPath);
+
+  return `<script>(function(){
+var R=${root};
+function fix(v){
+if(typeof v!=="string"||v.charCodeAt(0)!==47)return v;
+if(v.charCodeAt(1)===47)return v;
+if(v===R||v.lastIndexOf(R+"/",0)===0)return v;
+return R+v;}
+var A=["href","src","poster","action","data-src","formaction"];
+function fixEl(el){
+if(!el||el.nodeType!==1||!el.getAttribute)return;
+if(el.closest&&el.closest("#${BADGE_ID}"))return;
+for(var i=0;i<A.length;i++){var k=A[i],v=el.getAttribute(k);
+if(v!=null){var n=fix(v);if(n!==v)el.setAttribute(k,n);}}
+var s=el.getAttribute("srcset");
+if(s){var n2=s.split(",").map(function(p){
+return p.replace(/^(\\s*)\\/(?!\\/)/,function(m,sp){return sp+R+"/";});}).join(",");
+if(n2!==s)el.setAttribute("srcset",n2);}}
+function scan(n){
+if(!n)return;fixEl(n);
+if(n.querySelectorAll){var l=n.querySelectorAll("[href],[src],[srcset],[poster],[action],[data-src],[formaction]");
+for(var i=0;i<l.length;i++)fixEl(l[i]);}}
+new MutationObserver(function(ms){
+for(var i=0;i<ms.length;i++){var m=ms[i];
+if(m.type==="attributes")fixEl(m.target);
+else for(var j=0;j<m.addedNodes.length;j++)scan(m.addedNodes[j]);}
+}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:A.concat(["srcset"])});
+if(window.fetch){var of=window.fetch;window.fetch=function(i,o){
+if(typeof i==="string")i=fix(i);
+else if(i&&typeof i.url==="string"){var u=fix(i.url);if(u!==i.url)i=new Request(u,i);}
+return of.call(this,i,o);};}
+var ox=XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open=function(){
+if(arguments.length>1)arguments[1]=fix(arguments[1]);
+return ox.apply(this,arguments);};
+})();</script>`;
+}
+
+/**
+ * Tempelkan tanda "Prototipe oleh Decaf" di pojok kanan bawah.
  *
  * Inilah alasan fitur ini ada: prototipe yang dikirim ke calon klien
  * membawa nama pembuatnya, dan tautan yang bisa diklik kembali ke
@@ -129,8 +213,9 @@ function rewriteAbsolutePaths(html: string, basePath: string): string {
  * yang bisa bocor ke elemen milik prototipe.
  *
  * Logonya dirujuk sebagai path absolut ke `public/brand/` milik aplikasi
- * ini — dan penulisan ulang di atas sudah selesai sebelum badge disisipkan,
- * jadi path ini tidak ikut dibelokkan ke folder prototipe.
+ * ini. Penulisan ulang di server sudah selesai sebelum badge disisipkan,
+ * dan shim runtime mengecualikan seluruh isi badge — jadi path ini tidak
+ * ikut dibelokkan ke folder prototipe dari sisi mana pun.
  */
 function injectBadge(html: string): string {
   const badge = `
