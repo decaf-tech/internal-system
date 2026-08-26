@@ -29,6 +29,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Titik mount volume prototipe (docker-compose.yml). Dibuat DI SINI, bukan
+# dibiarkan dibuat Docker saat mount: volume kosong mewarisi kepemilikan &
+# izin folder yang sudah ada di image, dan folder yang dibuat Docker
+# sendiri jadi milik root — proses ini berjalan sebagai `nextjs` dan tidak
+# akan bisa menulis apa pun ke dalamnya.
+RUN mkdir -p /app/data/prototypes && chown -R nextjs:nodejs /app/data
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

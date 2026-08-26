@@ -3,6 +3,7 @@ import Link from "next/link";
 const TABS = [
   { href: "/backoffice/documents", label: "Berkas" },
   { href: "/backoffice/documents/templates", label: "Template" },
+  { href: "/backoffice/documents/prototypes", label: "Prototipe" },
   { href: "/backoffice/documents/company", label: "Perusahaan" },
 ] as const;
 

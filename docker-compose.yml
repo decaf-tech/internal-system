@@ -22,9 +22,16 @@ services:
     # bukan port ini — konsisten dengan pagar akses di blueprint §0B.3.
     ports:
       - "127.0.0.1:3000:3000"
+    volumes:
+      # Isi prototipe statis (PRD prototipe / migration 014). SATU-SATUNYA
+      # data aplikasi yang hidup di disk container, bukan di Supabase atau
+      # Drive — tanpa volume ini, semua prototipe yang sudah dibagikan ke
+      # calon klien mati setiap kali stack di-redeploy.
+      - prototypes_data:/app/data/prototypes
     environment:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      PROTOTYPES_DIR: /app/data/prototypes
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN}
@@ -38,3 +45,10 @@ services:
       UPTIME_KUMA_API_KEY: ${UPTIME_KUMA_API_KEY:-}
       BESZEL_URL: ${BESZEL_URL:-}
       UPTIME_KUMA_URL: ${UPTIME_KUMA_URL:-}
+
+volumes:
+  # Named volume, bukan bind mount ke folder di host: Portainer men-deploy
+  # dari snapshot yang foldernya berpindah-pindah, jadi path host mana pun
+  # yang ditulis di sini akan menunjuk tempat yang salah. Named volume
+  # dikelola Docker sendiri dan bertahan lintas redeploy.
+  prototypes_data:

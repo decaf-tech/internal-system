@@ -44,6 +44,17 @@ identitas tipografi pindah dari Fraunces ke Fredoka. Migration `013`
 **sudah dijalankan** ke database asli (20 Agustus 2026), jadi form sesi
 discovery di situs publik berfungsi — catatan "belum dijalankan" di §6
 dokumen itu sudah kedaluwarsa.
+Lalu `docs/PRD v3.6.md` — Prototipe Drop: unggah zip hasil build lewat
+Dokumen → Prototipe di backoffice, dapat tautan publik unlisted
+`decaf.id/p/<slug>` lengkap dengan badge branding Decaf. Berkasnya
+disimpan di disk container (Docker volume `prototypes_data`), **bukan**
+lewat `StorageProvider`/Google Drive — penyimpangan sengaja dari pola
+v2.3 §2.1, alasannya di v3.6 §2.2. "Unlisted" ditegakkan tiga lapis
+(§2.5 di sana): tabel `prototypes` **tidak punya policy `anon` sama
+sekali** — akses publik cuma lewat fungsi `security definer`
+`prototype_by_slug(slug)`, bukan lewat baris tabel. Migration `014`
+**belum dijalankan** ke database asli — sampai itu terjadi, `/p/...`
+membalas 500.
 
 **Identitas visual sekarang tidak lagi seperti yang ditulis v3.5.** Sejak
 19 Agustus 2026 ada logo sungguhan dan palet warna resmi, jadi bagian

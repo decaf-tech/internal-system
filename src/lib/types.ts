@@ -553,7 +553,8 @@ export type ActivityEntityType =
   | "folder"
   | "document"
   | "company_settings"
-  | "discovery_request";
+  | "discovery_request"
+  | "prototype";
 
 export type ActivityLogEntry = {
   id: string;

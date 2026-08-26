@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# Isi prototipe yang dibongkar saat `npm run dev` (lihat `prototypesDir()`
+# di src/lib/env.ts). Di server tempatnya volume Docker, bukan folder repo.
+/.data/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

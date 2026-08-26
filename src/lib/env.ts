@@ -43,3 +43,20 @@ export const googleDrive = () => ({
     process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID,
   ),
 });
+
+// --- Prototipe statis (server-side saja) ------------------------------
+
+/**
+ * Folder tempat isi prototipe dibongkar.
+ *
+ * Ini satu-satunya berkas milik aplikasi yang hidup di disk server, bukan
+ * di Supabase atau Drive — alasannya di kepala migration 014. Karena itu
+ * ia juga satu-satunya yang butuh volume Docker (lihat `docker-compose.yml`):
+ * tanpa volume, isinya lenyap setiap kali stack di-redeploy.
+ *
+ * Punya nilai bawaan, tidak pakai `required()`: yang belum menyetel apa pun
+ * — laptop yang baru meng-clone repo — harus tetap bisa `npm run dev`
+ * tanpa mengurus env dulu.
+ */
+export const prototypesDir = () =>
+  process.env.PROTOTYPES_DIR ?? "./.data/prototypes";
