@@ -56,7 +56,20 @@ export async function GET(
   // dalam halaman diselesaikan jadi `/p/style.css` — di luar prototipe
   // mana pun. Redirect permanen, karena inilah alamat yang sebenarnya.
   if (rest.length === 0 && !url.pathname.endsWith("/")) {
-    return Response.redirect(new URL(`${basePath}${url.search}`, url), 308);
+    // BUKAN `new URL(..., url)` — origin bawaan `request.url` di balik
+    // Cloudflare Tunnel adalah alamat bind container sendiri
+    // (`0.0.0.0:3000`, dari `HOSTNAME`/`PORT` di Dockerfile), bukan
+    // `decaf.id`. Ini kelas masalah yang sama dengan Origin/Host di
+    // server action (PRD v3.4 §6.1) — pola perbaikannya sama seperti
+    // `publicOrigin()` di halaman daftar backoffice: baca host & protokol
+    // sebenarnya dari header yang diteruskan tunnel, jangan percaya
+    // origin yang sudah dihitung Next.js sendiri.
+    const forwardedHost =
+      request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+    const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : url.origin;
+
+    return Response.redirect(new URL(`${basePath}${url.search}`, origin), 308);
   }
 
   const requestPath = rest.length === 0 ? data.entry_point : rest.join("/");
