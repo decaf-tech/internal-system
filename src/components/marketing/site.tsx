@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AnalyticsBeacon } from "./analytics-beacon";
 import { COPY, HOME, LANGS, type Lang } from "./copy";
 import { RevealOnScroll } from "./reveal-on-scroll";
 import {
@@ -37,6 +38,7 @@ export function MarketingSite({ lang }: { lang: Lang }) {
   return (
     <div lang={lang} className="contents">
       <RevealOnScroll />
+      <AnalyticsBeacon lang={lang} />
       <SiteNav lang={lang} />
       <main className="flex-1">
         <Hero lang={lang} />

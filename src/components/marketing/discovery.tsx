@@ -45,7 +45,12 @@ export function DiscoveryButton({
 
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={className}
+        data-track="discovery_open"
+        onClick={() => setOpen(true)}
+      >
         {children ?? copy.cta}
       </button>
 
@@ -220,6 +225,7 @@ function DiscoveryForm({
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
+            data-track="whatsapp_cta"
             className="font-medium text-accent underline underline-offset-2"
           >
             {copy.fallbackLink}

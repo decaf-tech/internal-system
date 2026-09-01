@@ -651,6 +651,7 @@ export function Contact({ lang }: { lang: Lang }) {
             href={waLink(COPY[lang].waMessage)}
             target="_blank"
             rel="noopener noreferrer"
+            data-track="whatsapp_cta"
             className="btn border-white/20 px-6 text-ink-inverse hover:bg-white/5"
           >
             {copy.ctaSecondary}

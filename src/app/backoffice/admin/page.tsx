@@ -52,6 +52,11 @@ export default async function AdminPage({
         eyebrow="Super Admin"
         title="Dashboard Admin"
         description="Kontrol anggota tim & riwayat aktivitas di seluruh sistem — cuma kamu yang bisa lihat halaman ini."
+        action={
+          <Link href="/backoffice/admin/analytics" className="btn btn-ghost">
+            Analitik Pengunjung →
+          </Link>
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
