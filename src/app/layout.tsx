@@ -41,10 +41,10 @@ export const metadata: Metadata = {
    * `alternates.languages` milik situs publik yang dua bahasa (lihat
    * `marketingMetadata()` di `components/marketing/site.tsx`).
    *
-   * Domainnya belum dibeli (PRD v3.4), jadi nilainya datang dari env var
-   * dan jatuh ke localhost selama belum diisi. Menuliskan tebakan domain
-   * di sini lebih buruk daripada localhost: yang salah akan diam-diam
-   * terkirim ke mesin telusur sebagai alamat kanonik.
+   * `NEXT_PUBLIC_SITE_URL` di-inline Next.js saat build, bukan runtime —
+   * harus diteruskan sebagai build arg Docker (lihat Dockerfile &
+   * docker-compose.yml), mengisi env var di Portainer saja tidak cukup.
+   * Fallback localhost cuma untuk `next dev` lokal.
    */
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",

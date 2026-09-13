@@ -16,6 +16,10 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        # Dipakai untuk `metadataBase` (canonical & hreflang) di
+        # src/app/layout.tsx — harus ada saat build karena NEXT_PUBLIC_*
+        # di-inline Next.js, bukan dibaca ulang saat container jalan.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     container_name: decaf-internal-system
     restart: unless-stopped
     # Hanya loopback. Yang menghadap internet adalah Cloudflare Tunnel,

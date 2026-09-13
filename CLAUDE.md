@@ -83,6 +83,17 @@ seksi (`#filosofi`, `#layanan`, …) sengaja tetap berbahasa Indonesia di
 kedua versi. Bagian PRD mana pun yang mengutip teks halaman publik
 sekarang bicara soal versi Indonesianya saja.
 
+**Wajib setiap selesai perubahan/pengembangan: perbarui juga
+`docs/CV - Decaf Internal System.md`.** Itu rangkuman proyek untuk CV &
+portofolio (spec, arsitektur, keamanan, DevOps, tantangan, output, dampak,
+bullet siap tempel ID/EN, timeline). Seperti seluruh `docs/`, berkas ini
+di-gitignore — jangan di-commit, jangan dikeluarkan dari `.gitignore`.
+Bagian "Cara Memperbarui" di awal berkas itu memuat daftar yang harus
+disentuh dan perintah untuk menghitung ulang angka; jangan tulis angka
+dari perkiraan, dan jangan isi metrik bertanda `[isi: …]` dengan karangan.
+Perubahan kecil tanpa dampak ke fitur/arsitektur/angka (typo, refactor
+kecil) cukup dilewati.
+
 `docs/Ide - Invoice Draft via Google Docs Template.md` adalah ide awal
 yang melahirkan v3.2 — sudah tergantikan, dibiarkan sebagai riwayat.
 `docs/PRD v1.md`,
