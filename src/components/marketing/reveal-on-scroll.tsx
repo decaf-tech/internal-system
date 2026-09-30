@@ -23,6 +23,13 @@ export function RevealOnScroll() {
     );
     if (targets.length === 0) return;
 
+    // WebView lawas tanpa IntersectionObserver: tampilkan semuanya saja,
+    // daripada melempar error dan merobohkan halaman.
+    if (typeof IntersectionObserver === "undefined") {
+      targets.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
