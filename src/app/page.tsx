@@ -1,24 +1,22 @@
-import { MarketingSite, marketingMetadata } from "@/components/marketing/site";
+import {
+  MarketingSite,
+  marketingMetadata,
+  marketingViewport,
+} from "@/components/marketing/site";
 
 /**
- * Halaman publik Decaf — satu halaman gulir yang membawa alur yang sama
- * dengan pitch deck yang selama ini dipakai 1-on-1:
- *
- *   pain → biaya pain → hasil → kepemilikan → pertukaran nilai → langkah berikutnya
- *
- * Ini pintu depan; sistem internal tim pindah ke `/backoffice`.
+ * Halaman publik Decaf, satu halaman gulir. Ini pintu depan; sistem
+ * internal tim ada di `/backoffice`.
  *
  * Bahasa Indonesia adalah versi bawaan situs, dan ia yang menempati akar.
- * Versi Inggrisnya berdiri sebagai rute tersendiri di `/en` — isi dan
+ * Versi Inggrisnya berdiri sebagai rute tersendiri di `/en`: isi dan
  * susunannya sama persis, cuma teksnya yang berbeda. Lihat `copy.ts`.
  *
- * Satu-satunya komponen klien di seluruh halaman ini adalah tombol yang
- * membuka form sesi discovery (`DiscoveryButton`). Sisanya teks, tautan,
- * satu SVG, dan animasi gulir yang dijalankan CSS sendiri lewat
- * `animation-timeline: view()` — tanpa pustaka animasi, tanpa observer.
- * Anggarannya sengaja seketat itu: akan aneh menjual kecepatan lewat
- * halaman yang lambat.
+ * Komponen kliennya cuma dua: form sesi discovery di seksi kontak dan
+ * beacon analitik. Sisanya HTML statis dan gambar mascot lewat
+ * `next/image`.
  */
+export const viewport = marketingViewport;
 export const metadata = marketingMetadata("id");
 
 export default function PublicHomePage() {

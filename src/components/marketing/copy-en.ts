@@ -1,498 +1,291 @@
 import type { SiteCopy } from "./copy";
 
 /**
- * Versi bahasa Inggris situs publik — padanan `copy-id.ts`, bukan
+ * Versi bahasa Inggris situs publik, padanan `copy-id.ts`, bukan
  * terjemahan harfiahnya.
  *
  * Yang harfiah cuma angkanya. Kalimatnya ditulis ulang supaya berbunyi
- * seperti ditulis dalam bahasa Inggris sejak awal — termasuk memisahkan
- * kalimat panjang bahasa Indonesia yang kalau diterjemahkan kata per kata
- * jadi satu kalimat berputar-putar.
+ * seperti ditulis dalam bahasa Inggris sejak awal.
  *
  * Yang TIDAK diterjemahkan, dan alasannya:
- *   - **Angka & satuan** diadaptasi, tidak diterjemahkan: "30–50 mnt" jadi
- *     "30–50 min", "290 rb+" jadi "290k+", "Rp 11,8 jt" jadi "Rp 11.8M".
- *     Nilai rupiah tetap rupiah — mengonversinya ke dolar berarti memasang
- *     kurs yang akan basi, dan pembaca yang dituju halaman ini tetap
- *     berurusan dengan bisnis di Indonesia.
- *   - **Nama** (Decaf, The Kitchen, The Storefront, nama klien, nama kota)
- *     dan **istilah brand** (Empowering Technology, Craft First Tech
- *     Second) — sudah berbahasa Inggris sejak awal, dan mengubahnya akan
- *     membuat dua versi situs menyebut hal yang sama dengan nama berbeda.
- *   - **Jangkar seksi** (`#filosofi`, `#layanan`, …) — id elemen, bukan
- *     kalimat. Lihat komentar di `copy-id.ts`.
+ *   - **Angka & satuan** diadaptasi, tidak diterjemahkan: "290 rb+" jadi
+ *     "290k+", "Rp 11,8 jt" jadi "Rp 11.8M". Nilai rupiah tetap rupiah:
+ *     mengonversinya ke dolar berarti memasang kurs yang akan basi.
+ *   - **Nama** (Decaf, The Kitchen, The Storefront, nama klien, nama kota),
+ *     supaya dua versi situs tidak menyebut hal yang sama dengan nama
+ *     berbeda.
+ *   - **Jangkar seksi** (`#layanan`, …), id elemen, bukan kalimat.
  *
  * Pagar isinya sama persis: angka dulu kata sifat belakangan, anti-hype,
- * dan yang belum selesai tidak dipajang.
+ * tanpa em dash, dan yang belum selesai tidak dipajang.
  */
 
 export const EN: SiteCopy = {
   meta: {
-    title: "Decaf Tech — Digital Transformation That Puts People First",
+    title: "Decaf Tech | Digital Transformation That Puts People First",
     description:
-      "Custom systems you own, not rent. Daily reconciliation down to one click, 0% recording errors, Rp 0/month in server costs.",
+      "Custom systems you own, not rent. Point of sale, finance, stock, and websites with a CMS, built specifically for your business.",
   },
 
   nav: {
     links: [
-      { href: "#filosofi", label: "Value" },
       { href: "#layanan", label: "Services" },
       { href: "#portfolio", label: "Portfolio" },
       { href: "#proses", label: "Process" },
-      { href: "#kontak", label: "Contact" },
+      { href: "#tentang", label: "About" },
     ],
     sections: "Page sections",
-    home: "Decaf Tech — back to top",
+    home: "Decaf Tech, back to top",
     language: "Choose language",
     cta: "Free session",
   },
 
+  mascots: {
+    hero: "Deko, Decaf's blue crocheted van, parked with its awning open: inside are a laptop, a server rack, and plants. Ciko the bird sits on the roof.",
+    philosophy: "Ciko the crocheted bird thinking, wing on chin.",
+    kitchen:
+      "Inside Deko: a cash register with a receipt printer, Ciko standing beside it.",
+    storefront:
+      "Inside Deko: a laptop showing a web page, Ciko standing beside it.",
+    proof: "Ciko the crocheted bird jumping happily with wings spread.",
+    value: "Deko the crocheted van winking, Ciko on its roof.",
+    process:
+      "Deko the crocheted van seen from the front with its lights on, Ciko on its roof.",
+    about:
+      "Deko driving down a highway at sunset, Ciko on the roof with the luggage.",
+    contact: "Ciko the crocheted bird sitting relaxed with eyes closed.",
+  },
+
+  footnote: "*Measured methodologically.",
+
   hero: {
-    splashEyebrow: "A digital studio, Made tech just for you",
-    scroll: "Scroll",
-    eyebrow: "Decaf Tech · Digital Systems Studio",
-    title: {
-      line1: "Digital transformation",
-      line2: "that ",
-      accent: "empowers people.",
-    },
-    lede: {
-      before:
-        "Technology was never meant to replace people — it exists to extend what they can already do. We build custom systems ",
-      strong: "you own",
-      after: " — not ones you rent forever.",
-    },
+    title: { before: "Digital transformation that ", accent: "empowers people." },
+    lede: { before: "Custom systems that ", strong: "you own", after: "" },
+    cta: "Free discovery session",
     ctaSecondary: "See the real numbers",
     stats: [
-      { value: "1 click", label: "replaces 30–50 min of daily reconciliation" },
-      { value: "10–18×", label: "faster reconciliation" },
-      { value: "55–65%", label: "prototype handoff efficiency" },
-      { value: "6", label: "live systems you can verify" },
+      { value: "45%*", label: "more efficient transactions and reporting" },
+      { value: "10-18×", label: "faster reconciliation" },
     ],
+    ownership: {
+      title: "Entirely yours",
+      body: "Made just for you",
+    },
   },
 
   philosophy: {
-    eyebrow: "01 · Philosophy",
-    title: "Shifting the productivity curve",
-    body: [
-      "In conventional operations, accuracy costs hours of manual work. Every bit of extra precision is paid for with extra time — and the curve climbs slowly.",
-      "The right digital system moves that curve: higher output, sharper decisions, in a fraction of the time.",
+    label: "Philosophy",
+    cards: [
+      {
+        title: "Craft first, tech second",
+        body: "Understand the problem in context first. Not every problem needs a technology solution.",
+      },
+      {
+        title: "Strengthen, not replace",
+        body: "The right technology multiplies what your team can already do, without creating a new dependency.",
+      },
     ],
-    empowering: {
-      title: "Empowering Technology",
-      body: "The right technology does not create a new dependency — it multiplies the capacity your team already possesses. As a result, it maximizes both variables at once: time and output, delivering better outcomes in less time.",
-    },
-    craft: {
-      title: "Craft First, Tech Second",
-      body: "Craft comes first — empathy and a genuine understanding of the problem, so the solution remains contextual as well. Tech comes second, as not every problem requires a technological solution — at times, the right approach alone suffices.",
-    },
   },
 
   services: {
-    eyebrow: "02 · Services",
     title: "Two services, one way of working",
-    lede: "Not every business needs the same solution. Two services with opposite architectural characters, each optimal in its own context — both still built for you to own.",
+    lede: "Both are built specifically for you, and both are entirely yours.",
     cta: "Start here",
-    investmentLabel: "Investment model",
+    detailsLabel: "Details & investment model",
+    audienceLabel: "Best for",
     tracks: [
       {
-        eyebrow: "Service 01 · The Kitchen",
+        label: "The Kitchen",
         title: "Business Operational",
-        subtitle: "For the operational kitchen of your business",
+        subtitle: "Point of sale, finance, and stock. Runs on your own devices.",
         tone: "night",
-        rows: [
-          {
-            label: "Best for",
-            value: "Small businesses, cafés, retail stores, cashiers, warehouses",
-          },
-          {
-            label: "Built for you",
-            value:
-              "Designed around your operations — not an off-the-shelf product everyone is made to fit",
-          },
-          {
-            label: "Ownership",
-            value: "Entirely yours from day one, with no monthly subscription",
-          },
-          { label: "Data", value: "100% under the physical control of your premises" },
+        audience: ["Small business", "Cafés", "Retail", "Cashiers", "Warehouses"],
+        stats: [
+          { value: "45%*", label: "more efficient transactions & reports" },
+          { value: "10-18×", label: "faster reconciliation" },
+          { value: "Real-Time", label: "cash flow & trends" },
         ],
-        investment: [
-          "One-time development cost",
-          "No binding monthly subscription",
-          "Runs directly on your own devices, with no reliance on outside services",
-          "Data 100% under your physical control",
+        details: [
+          "One-time development cost, no monthly subscription",
+          "Data 100% under the physical control of your premises",
+          "Runs on your devices, with no reliance on outside services",
           "Can be monitored remotely whenever needed",
           "Upgrades & feature iterations as your needs change",
         ],
       },
       {
-        eyebrow: "Service 02 · The Storefront",
+        label: "The Storefront",
         title: "Community & Branding",
-        subtitle: "For the digital storefront of your identity",
+        subtitle: "A website + CMS you edit yourself, no developer needed.",
         tone: "forest",
-        rows: [
-          {
-            label: "Best for",
-            value: "Company profiles, portfolios, communities, branding",
-          },
-          {
-            label: "Built for you",
-            value:
-              "Designed around your business's story — not a template anyone else could use",
-          },
-          {
-            label: "Ownership",
-            value: "Entirely yours, with no binding subscription",
-          },
-          {
-            label: "Reach",
-            value: "Loads fast from anywhere, from the first day it goes live",
-          },
+        audience: ["Company profile", "Portfolio", "Community", "Branding"],
+        stats: [
+          { value: "~100", label: "Google speed score" },
+          { value: "Global", label: "fast from any city" },
+          { value: "Self-CMS", label: "no developer queue" },
         ],
-        investment: [
-          "One-time development cost",
-          "No upfront hosting cost at ordinary traffic levels",
-          "Scale up on your own terms as you grow",
-          "Updates publish automatically on every change, with no manual step",
-          "Loads fast from anywhere, from the first day it goes live",
-          "Edit content without needing a developer",
+        details: [
+          "One-time development cost, no binding subscription",
+          "No upfront hosting cost at typical scale",
+          "Upgrade on your own as you grow",
+          "Every form a visitor fills in is recorded automatically",
+          "Update content without a developer",
         ],
       },
     ],
   },
 
-  outcomes: {
-    kitchen: {
-      eyebrow: "Service 01 · Business operations",
-      title: "What you get",
-      items: [
-        {
-          metric: "1-Click",
-          caption: "down from 30–50 min by hand",
-          title: "Time You Get Back",
-          body: "Daily financial reconciliation that used to take 30–50 minutes of manual work now finishes in a single click. That time comes back to you in full.",
-        },
-        {
-          metric: "0%",
-          caption: "recording & stock errors",
-          title: "Reliability You Can Measure",
-          body: "Errors in stock deduction are eliminated through atomic database transactions. No more overselling, no more mispriced entries.",
-        },
-        {
-          metric: "Real-Time",
-          caption: "financial insight & trends",
-          title: "Clarity, Immediately",
-          body: "Cash flow, sales trends, and reconciliation are available the moment you ask — no waiting for month-end, no multi-day manual process.",
-        },
-      ],
-    },
-    storefront: {
-      eyebrow: "Service 02 · Community & branding",
-      title: "A digital identity that speaks for you",
-      items: [
-        {
-          metric: "Global CDN",
-          caption: "your physical store is not the only thing open 24 hours",
-          title: "Findable From Anywhere",
-          body: "Your site is copied to hundreds of servers around the world, so someone in any city opens it just as fast — not only the people nearby. Distance stops limiting your reach.",
-        },
-        {
-          metric: "~100",
-          caption: "official Google speed score",
-          title: "A First Impression That Holds",
-          body: "People judge a business in the first seconds of opening its site. A slow or slapdash site loses prospective customers before they ever meet your product — a fast, well-made one gives them a reason to stay.",
-        },
-        {
-          metric: "Self-CMS",
-          caption: "no developer, no waiting in line",
-          title: "Always Current, Without the Hassle",
-          body: "Change prices, photos, or announcements yourself, whenever you like — no calling a developer, no waiting your turn. Everyone who fills in a form on your site is recorded automatically, so no prospect slips through.",
-        },
-      ],
-    },
-  },
-
   proof: {
-    eyebrow: "03 · Track record",
-    title: "Real numbers from systems in production",
-    lede: "Every number below is a measured result from a running system — not a projection, not a marketing claim. All of it traces back to the code and the development documentation.",
+    title: "Real results from systems in use",
+    lede: "Every one of these is a running system, not a projection.",
     trackLabel: { kitchen: "Kitchen", storefront: "Storefront" },
+    storyLabel: "Before & after",
     cases: [
       {
-        no: "01",
         name: "Mammo's Home Bakery",
-        kind: "POS & Business Management",
-        meta: "Bukit Lawang, North Sumatra",
-        before: "Records on paper & spreadsheets. Reconciliation took 30–50 min/day.",
         track: "kitchen",
-        stats: [
-          { value: "0%", label: "Stock deduction errors" },
-          { value: "1-click", label: "Daily financial reconciliation" },
-          { value: "0 cases", label: "Stock overselling" },
-        ],
+        value: "45%*",
+        result: "more efficient transactions and reporting",
+        meta: "POS & business management · North Sumatra",
+        story:
+          "Before: paper & spreadsheets, 30-50 minutes of reconciliation a day. Now transactions and reports live in one system, with no overselling.",
       },
       {
-        no: "02",
         name: "Diversity of Sumatra Clothes",
-        kind: "Multi-Location Inventory",
-        meta: "Bukit Lawang, North Sumatra",
-        before:
-          "Stock scattered with no visibility. Staff sold items without knowing availability.",
         track: "kitchen",
-        stats: [
-          { value: "→ 0", label: "Stockouts after go-live" },
-          { value: "< 2 min", label: "Recording time per transaction" },
-          { value: "0%", label: "Revenue leakage from pricing" },
-        ],
+        result: "Stock visible across every location",
+        meta: "Multi-location inventory · North Sumatra",
+        story:
+          "Before: staff sold items without knowing if they were in stock. Now every location's stock is recorded in one system.",
       },
       {
-        no: "03",
         name: "CS Dashboard Siswamedia",
-        kind: "Enterprise Monitoring Platform",
-        meta: "Jakarta",
-        before:
-          "WhatsApp threads & Google Sheets. Financial discrepancies surfaced only at month-end.",
         track: "kitchen",
-        stats: [
-          { value: "10–18×", label: "Faster reconciliation" },
-          { value: "< 60 sec", label: "AI analysis across 90 days of data" },
-          { value: "55–65%", label: "Prototype handoff efficiency" },
-        ],
+        value: "10-18×",
+        result: "faster reconciliation",
+        meta: "Monitoring platform · Jakarta",
+        story:
+          "Before: WhatsApp & Google Sheets, with discrepancies found only at month-end. Now 90 days of data are analysed in < 60 seconds.",
       },
       {
-        no: "04",
         name: "Sadewa (Sayap Dewantara)",
-        kind: "Foundation Site + CMS + Analytics",
-        meta: "Jakarta",
-        before:
-          "A static Wix site; 15 years of education programmes with no public record.",
         track: "storefront",
+        result: "Staff update the site themselves",
+        meta: "Foundation website",
         url: "sadewaind.org",
-        stats: [
-          {
-            value: "10 cohorts",
-            label:
-              "15 years of programme history is now public reading — no longer buried in internal PDF reports",
-          },
-          {
-            value: "0 lines of code",
-            label:
-              "Foundation staff post news & programmes themselves, without waiting for a developer",
-          },
-          {
-            value: "Rp0/month",
-            label:
-              "No monthly platform rent — the site belongs entirely to the foundation",
-          },
-        ],
+        story:
+          "Before: a static Wix site, and 15 years of programme history with no public record. Now anyone can read it, with no platform rental fee.",
       },
       {
-        no: "05",
         name: "LAKSA Bogor",
-        kind: "Tourism Directory + Government Backoffice",
-        meta: "Bogor",
-        before:
-          "Tourism content buried inside a chatbot iframe — 0 pages Google could index.",
         track: "storefront",
+        result: "Bogor tourism now shows up on Google",
+        meta: "Local government tourism directory",
         url: "laksabogor.info",
-        stats: [
-          {
-            value: "76 pages",
-            label:
-              "Bogor's tourism now appears in Google search — previously 0 pages could be found at all",
-          },
-          {
-            value: "0 lines of code",
-            label:
-              "Agency staff add and edit destination details themselves, without a developer",
-          },
-          {
-            value: "250 facilities",
-            label:
-              "Residents & visitors find the nearest health facility straight from the site",
-          },
-        ],
+        story:
+          "Before: tourism content was buried inside a chatbot. Now agency staff edit destination info themselves, and residents can find the nearest health facility.",
       },
       {
-        no: "06",
         name: "Gernas Tastaka",
-        kind: "Site Migration & Modernisation",
-        meta: "Literacy nonprofit",
-        before: "An ageing WordPress, content mixed with junk, no English path.",
         track: "storefront",
+        result: "A bilingual site for international partners",
+        meta: "Literacy nonprofit · no-code self-CMS",
         url: "gernastastaka.org",
-        stats: [
-          {
-            value: "2 languages",
-            label:
-              "The site now reads for international partners & donors, not only local visitors",
-          },
-          {
-            value: "24 blocks",
-            label:
-              "Non-technical staff assemble new pages themselves through an Indonesian-language dashboard",
-          },
-          {
-            value: "123 photos",
-            label:
-              "The full programme documentation moved across intact, with nothing lost",
-          },
-        ],
+        story:
+          "Before: an ageing WordPress site with no English path. Now the site has a self-CMS: non-technical staff build pages themselves from 24 ready-made blocks in an Indonesian-language dashboard, without writing a line of code. The activity archive moved over intact.",
       },
     ],
   },
 
   value: {
-    eyebrow: "04 · Value proposition",
     title: "More than a transaction",
-    quote:
-      "I give value, and I receive value. The success of your system is my best portfolio.",
-    note: {
-      before: "This sits ",
-      strong: "on top of",
-      after:
-        " a transparent development fee, it does not replace one. Beyond the figure we agree on, there are three things I am looking for in every engagement.",
-    },
-    items: [
-      {
-        no: "01",
-        title: "Meaningful Networks",
-        body: "Access to communities, business referrals, and a web of relationships that stays mutually useful over the long run.",
-      },
-      {
-        no: "02",
-        title: "Continuous Learning",
-        body: "Every engagement teaches something new about your business context — and that learning is what makes the next solution sharper and better aimed.",
-      },
-      {
-        no: "03",
-        title: "Real Social Impact",
-        body: "Work whose benefit reaches past the business itself — to the community, the environment, or the people around it.",
-      },
-    ],
+    quote: "The success of your system is my best portfolio.",
+    items: ["Meaningful networks", "Continuous learning", "Real social impact"],
+    note: "All three sit on top of a transparent development fee, never in place of it.",
   },
 
   process: {
-    eyebrow: "05 · Execution process",
     title: "From problem to running product",
-    lede: "Five stages every engagement goes through, in order. You always know which stage you are in — and what comes out of it.",
     steps: [
+      { title: "Discovery", body: "Find the root cause, not the symptom." },
       {
-        no: "01",
-        title: "Discovery & Problem Mapping",
-        body: "Identifying the root problem, not just its symptoms. The output is one problem statement we both agree on.",
+        title: "Specification & prototype",
+        body: "Transparent estimates, no surprise costs.",
       },
       {
-        no: "02",
-        title: "Specification & Prototyping",
-        body: "Choosing the solution path, writing the requirements, estimating effort transparently. No cost surprises.",
+        title: "Execution sprints",
+        body: "Watch the system grow from day one.",
       },
       {
-        no: "03",
-        title: "Execution Sprints",
-        body: "Iterative. You watch the system take shape from day one — rather than waiting until it is finished.",
+        title: "Deployment & handover",
+        body: "Installed, documented, team trained.",
       },
       {
-        no: "04",
-        title: "Deployment & Handover",
-        body: "Installation on your own devices, technical documentation, a training session. You are not dependent on us.",
-      },
-      {
-        no: "05",
-        title: "Post-Delivery Support",
-        body: "A bug-fix guarantee and a clear line of communication for the next round of features.",
+        title: "Post-delivery support",
+        body: "A bug guarantee and a path for the next iteration.",
       },
     ],
   },
 
   about: {
-    eyebrow: "What shaped this way of working",
     title: "It started in the field, not on a screen",
-    location: "Bogor, West Java, Indonesia",
-    body: [
-      "Before this was a studio, the work was running empowerment programmes in the field: sitting with small business owners, teachers, and community organisers — people whose system was not a dashboard but a notebook and a WhatsApp group nobody ever finishes reading.",
-      "That is where the habit formed: map the problem where it happens first, then decide what needs building. Often the answer turns out to be fewer features, not more.",
-      "The measure of success shifted with it. Not that the system shipped on time, but that the person using it every day is still using it three months later — with nobody sitting beside them.",
-    ],
+    location: "Bogor, West Java",
+    body: "Before we were a studio, we sat with business owners, teachers, and community organisers whose systems were still notebooks and WhatsApp groups.",
+    measure:
+      "Our measure: still in use three months later, with nobody holding their hand.",
     facts: [
-      {
-        value: "Rp 200M",
-        label:
-          "Business grants managed through to disbursement for 70 entrepreneurs across 5 locations",
-      },
-      {
-        value: "6,117 users",
-        label: "Served through school systems across 15+ schools",
-      },
-      {
-        value: "Rp 11.8M",
-        label:
-          "Public donations raised in a single month during the National Children's Day campaign",
-      },
-      {
-        value: "290k+",
-        label:
-          "Audience reached across two campaign collaborations, 130k+ impressions — including the campaign that raised Rp 11.8M in public donations",
-      },
-      {
-        value: "20+ sessions",
-        label: "Testing with real users before any feature was called finished",
-      },
+      { value: "Rp 200M", label: "in grants disbursed to 70 entrepreneurs" },
+      { value: "6,117", label: "system users across 15+ schools" },
+      { value: "Rp 11.8M", label: "raised in a one-month campaign" },
+      { value: "290k+", label: "audience reached by two campaign collaborations" },
+      { value: "20+ sessions", label: "of testing with real users" },
     ],
   },
 
   contact: {
-    eyebrow: "Next step",
     title: "Let's design the solution together",
-    lede: "The first discovery session is free and commits you to nothing. Fill in three short fields and our team will reach out — we start by understanding the problem, not by selling a solution.",
-    ctaSecondary: "Message us directly",
+    lede: "The first session is free and commits you to nothing. Fill in the form and our team will reach out.",
   },
 
   footer: {
     tagline: "Empowering people, impact first.",
+    otherLang: "Versi Indonesia",
     backoffice: "Team login",
   },
 
   discovery: {
-    cta: "Free discovery session",
     title: "Free discovery session",
-    intro:
-      "Fill in the three fields below. Our team will contact you — there is no cost and no commitment.",
     fields: {
       phone: {
         label: "Phone / WhatsApp number",
         placeholder: "+62 812xxxxxxxx",
-        hint: "This is where our team will reach you.",
       },
       business: {
         label: "Field or type of business",
-        placeholder: "Café, 2 branches · Hardware store · Education foundation",
+        placeholder: "Café with 2 branches, hardware store, foundation…",
       },
       interest: {
-        label: "Tell us about your business/project right now?",
-        placeholder:
-          "For example: a café with 2 branches, stock is still tracked by hand and often drifts.",
+        label: "Tell us about your business problem",
+        placeholder: "Example: stock is still recorded by hand and often doesn't add up.",
       },
     },
+    optional: "(optional)",
     honeypot: "Leave this empty",
     submit: "Send & wait for our call",
     pending: "Sending…",
-    close: "Close",
     successTitle: "Sent. Thank you!",
     successBody:
-      "Our team will contact you on the number you gave, within one working day. There is nothing you need to prepare — the first conversation is for understanding the problem.",
-    fallback: "Prefer to talk right away?",
-    fallbackLink: "Message us on WhatsApp",
+      "Our team will reach you on that number within 1×24 working hours. No need to prepare anything.",
+    reset: "Fill in again",
+    fallback: "Prefer to talk directly?",
+    fallbackLink: "Message us on LinkedIn",
     errors: {
-      empty: "All three fields are still required.",
-      phone: "That phone number looks incomplete — please check it again.",
+      empty: "Phone number and business field are still required.",
+      phone: "That number looks incomplete. Please check it again.",
       business: "Tell us a little more clearly what field your business is in.",
-      interest: "Tell us a bit about your business or project.",
+      interest: "Tell us a little more, or leave it empty.",
       failed:
-        "Sorry, sending failed. Please try once more, or message us directly on WhatsApp.",
+        "Sorry, sending failed. Please try once more, or message us on LinkedIn.",
     },
   },
-
-  waMessage:
-    "Hello, I found Decaf Tech through your website. I'd like to talk about my business operations.",
 };

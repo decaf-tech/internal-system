@@ -1,140 +1,599 @@
-import { LogoMark } from "@/components/brand";
-import { waLink } from "./content";
-import { COPY, discoveryProps, type Lang, type Outcome } from "./copy";
-import { DiscoveryButton } from "./discovery";
-import { Container, Eyebrow, Lede, Section, SectionTitle } from "./shell";
+import Image from "next/image";
+import cikoChill from "../../../public/brand/mascot/web/ciko-chill.webp";
+import cikoExcited from "../../../public/brand/mascot/web/ciko-excited.webp";
+import cikoThinking from "../../../public/brand/mascot/web/ciko-thinking.webp";
+import dekoFront from "../../../public/brand/mascot/web/deko-front.webp";
+import dekoPark from "../../../public/brand/mascot/web/deko-park.webp";
+import dekoWink from "../../../public/brand/mascot/web/deko-wink.webp";
+import sceneJalan from "../../../public/brand/mascot/web/scene-jalan.webp";
+import sceneKasir from "../../../public/brand/mascot/web/scene-kasir.webp";
+import sceneLaptop from "../../../public/brand/mascot/web/scene-laptop.webp";
+import { COPY, discoveryProps, type Lang, type Track } from "./copy";
+import { DiscoveryForm } from "./discovery";
+import { Container, SiteNav } from "./shell";
 
 /**
  * Semua seksi menerima `lang` dan mengambil teksnya sendiri dari `COPY`.
  *
- * Alternatifnya — meneruskan objek `copy` dari halaman ke tiap seksi —
- * mengubah tiap seksi jadi ikut memikul tipe seluruh situs di tanda
- * tangannya. Yang dipakai di sini cuma satu kata (`"id"` / `"en"`), dan
- * seksinya yang tahu cabang mana yang ia butuhkan.
+ * Tata letaknya mengikuti canvas desain Oktober 2026 hampir piksel per
+ * piksel, termasuk `flex-wrap` dan `auto-fit` yang membuat satu tata letak
+ * yang sama berlaku dari 390px sampai 1440px tanpa breakpoint. Karena itu
+ * banyak ukuran di sini ditulis sebagai nilai Tailwind arbitrer.
+ *
+ * Mascot (Ciko si burung, Deko si van) diimpor sebagai berkas supaya
+ * ukuran aslinya ikut terbawa ke `next/image`. Setiap pose Deko sudah
+ * memuat Ciko di atapnya, jadi tidak ada frame yang memasang keduanya
+ * terpisah.
  */
 
 /* ================================================================== */
 /* Hero                                                                */
 /* ================================================================== */
 
-/**
- * Layar pembuka — sengaja kosong.
- *
- * Satu wordmark, satu slogan, satu isyarat gulir. Tidak ada CTA, tidak ada
- * angka: itu semua datang satu gulir setelahnya, di `HeroBody`. Baris
- * pertama yang dibaca pengunjung menentukan bagaimana ia membaca sisa
- * halaman — dan yang paling lugas untuk dikatakan duluan adalah nama dan
- * prinsip kerjanya, bukan proposisi nilai.
- */
-function HeroSplash({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].hero;
+export function Hero({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const hero = copy.hero;
 
   return (
-    // `splash` memasang view-timeline bernama --splash (globals.css);
-    // seluruh gerakan di layar ini berpatokan pada seksi INI keluar dari
-    // layar, bukan pada posisi masing-masing elemen di dalamnya.
-    <section className="splash relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden border-b border-line bg-canvas px-6 text-center">
-      {/* Dua bulatan kabur ini bergerak lebih lambat dari halaman saat
-          digulir — satu-satunya parallax di situs, dan hanya karena
-          keduanya memang bukan isi: tidak ada yang harus dibaca di
-          dalamnya, jadi tidak ada yang terganggu kalau ia bergeser. */}
-      <div
-        aria-hidden
-        className="splash-drift-far pointer-events-none absolute -top-32 -right-24 h-[28rem] w-[28rem] rounded-full bg-accent-soft blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="splash-drift-near pointer-events-none absolute -bottom-40 -left-24 h-[24rem] w-[24rem] rounded-full bg-accent-soft/60 blur-3xl"
-      />
+    <header className="overflow-x-clip bg-night text-ink-inverse">
+      <SiteNav lang={lang} />
 
-      {/* Dibungkus jadi satu supaya larutnya juga satu gerakan. Kalau
-          tiap baris diberi animasinya sendiri, eyebrow akan menghilang
-          duluan dan namanya menyusul — layar pembuka yang berantakan
-          persis di saat ditinggalkan. */}
-      <div className="splash-exit flex flex-col items-center">
-        <p className="eyebrow text-accent">{copy.splashEyebrow}</p>
-        {/* Layar pembuka adalah satu-satunya tempat di seluruh situs yang
-            punya ruang untuk menampilkan lambangnya besar-besar, dan
-            satu-satunya tempat yang tugasnya memang memperkenalkan nama.
-            Di tempat lain lambangnya seukuran baris nav. */}
-        <LogoMark className="mt-8 h-24 sm:h-32 lg:h-40" priority />
-        <p className="wordmark mt-6 text-5xl text-ink sm:text-7xl lg:text-8xl">
-          Decaf Tech
-        </p>
-        {/* Tagline brand — tidak diterjemahkan, sama seperti nama. Sama
-            persis dengan yang muncul di bawah wordmark bilah nav
-            (`LogoLockup` tagline di brand.tsx) dan di `logo-full-inverse.png`. */}
-        <p
-          lang="en"
-          className="mt-6 font-mono text-xs tracking-[0.3em] text-ink-muted uppercase sm:text-sm"
+      <Container className="flex flex-wrap items-center gap-[clamp(16px,3vw,40px)] pt-[clamp(28px,5vw,72px)]">
+        <div id="top" className="hero-in min-w-0 flex-[1_1_400px]">
+          <h1 className="m-0 text-[clamp(44px,5.6vw,78px)] leading-[1.02] tracking-[-0.025em]">
+            {hero.title.before}
+            <span className="text-accent-bright">{hero.title.accent}</span>
+          </h1>
+          <p className="mt-6 max-w-[34ch] text-[clamp(18px,1.5vw,21px)] leading-[1.55] text-[#c3cfdd]">
+            {hero.lede.before}
+            <strong className="text-white">{hero.lede.strong}</strong>
+            {hero.lede.after}
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <a
+              href="#kontak"
+              data-track="discovery_cta"
+              className="site-btn min-h-14 px-[26px] py-4 text-[17px]"
+            >
+              {hero.cta}
+            </a>
+            <a
+              href="#portfolio"
+              className="py-3 font-bold text-ink-inverse underline decoration-accent-bright decoration-2 hover:text-accent-bright"
+            >
+              {hero.ctaSecondary}
+            </a>
+          </div>
+        </div>
+        {/* Menjorok 48px ke pita angka di bawahnya: van-nya "parkir" di
+            atas jalan bergaris putus-putus itu. */}
+        <div className="hero-van relative z-[1] -mb-12 min-w-0 flex-[1.15_1_480px]">
+          <Image
+            src={dekoPark}
+            alt={copy.mascots.hero}
+            priority
+            sizes="(min-width: 1280px) 640px, (min-width: 900px) 52vw, 100vw"
+            className="block h-auto w-full"
+          />
+        </div>
+      </Container>
+
+      <div className="relative bg-night-soft">
+        <svg
+          aria-hidden
+          width="100%"
+          height="8"
+          className="absolute top-[34px] left-0 block"
         >
-          Empowering Technologies
-        </p>
+          <line
+            className="hero-road"
+            x1="0"
+            y1="4"
+            x2="100%"
+            y2="4"
+            stroke="#2b4f7f"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray="28 22"
+          />
+        </svg>
+        <Container className="relative">
+          <dl className="stagger grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-x-8 gap-y-5 pt-[76px] pb-5">
+            {hero.stats.map((stat) => (
+              <div key={stat.label} className="reveal">
+                <dt className="site-num text-[30px] text-accent-bright">
+                  {stat.value}
+                </dt>
+                <dd className="mt-1 text-[14px] text-[#c3cfdd]">{stat.label}</dd>
+              </div>
+            ))}
+            <div className="reveal">
+              <dt className="text-[22px] leading-[1.25] font-extrabold text-accent-bright">
+                {hero.ownership.title}
+              </dt>
+              <dd className="mt-1 text-[14px] text-[#c3cfdd]">
+                {hero.ownership.body}
+              </dd>
+            </div>
+          </dl>
+          <p className="pb-6 text-[13px] text-ink-inverse-muted">
+            {copy.footnote}
+          </p>
+        </Container>
       </div>
+    </header>
+  );
+}
 
-      <div className="scroll-cue absolute bottom-10 flex flex-col items-center gap-2 text-ink-subtle">
-        <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
-          {copy.scroll}
-        </span>
-        {/* Garis dengan titik yang menyusurinya ke bawah — isyarat arah,
-            bukan sekadar garis. Lihat .scroll-cue-track di globals.css
-            untuk alasan kenapa yang satu ini berbasis waktu. */}
-        <span aria-hidden className="scroll-cue-track h-10 w-px" />
-      </div>
+/* ================================================================== */
+/* Filosofi                                                            */
+/* ================================================================== */
+
+export function Philosophy({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const [craft, empower] = copy.philosophy.cards;
+
+  return (
+    <section
+      id="filosofi"
+      aria-label={copy.philosophy.label}
+      className="pt-[clamp(80px,9vw,120px)] pb-[clamp(48px,6vw,80px)]"
+    >
+      <Container className="stagger grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-5">
+        <div className="reveal flex items-center gap-5 rounded-[22px] bg-accent-soft px-7 py-6">
+          <Image
+            src={cikoThinking}
+            alt={copy.mascots.philosophy}
+            sizes="112px"
+            className="block h-auto w-28 flex-none"
+          />
+          <div>
+            <h2 className="text-[24px] leading-[1.2]">{craft.title}</h2>
+            <p className="mt-2 text-[16px] leading-[1.55] text-[#22344d]">
+              {craft.body}
+            </p>
+          </div>
+        </div>
+        <div className="reveal flex flex-col justify-center rounded-[22px] bg-forest-soft px-7 py-6">
+          <h2 className="text-[24px] leading-[1.2]">{empower.title}</h2>
+          <p className="mt-2 text-[16px] leading-[1.55] text-[#1f3d33]">
+            {empower.body}
+          </p>
+        </div>
+      </Container>
     </section>
   );
 }
 
-function HeroBody({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].hero;
+/* ================================================================== */
+/* Layanan                                                             */
+/* ================================================================== */
+
+/**
+ * Warna per layanan. Kitchen di navy dengan aksen Electric Blue,
+ * Storefront di hijau forest dengan aksen mint pucat. Keduanya dicek
+ * kontrasnya di canvas: teks kecil di atas forest memakai #e3faf0, bukan
+ * mint, karena mint di sana jatuh di bawah 4,5:1.
+ */
+const TRACK_TONE = {
+  night: {
+    card: "bg-night text-ink-inverse",
+    chip: "bg-night-soft",
+    label: "text-accent-bright",
+    muted: "text-[#c3cfdd]",
+    number: "text-accent-bright",
+    rule: "border-[#1f4170]",
+    list: "text-[#dbe4ee]",
+    button: "site-btn",
+  },
+  forest: {
+    card: "bg-forest text-white",
+    chip: "bg-[#03664a]",
+    label: "text-forest-soft",
+    muted: "text-[#e3faf0]",
+    number: "text-forest-soft",
+    rule: "border-[#2f9473]",
+    list: "text-[#ecfdf5]",
+    button: "site-btn site-btn-dark",
+  },
+} as const;
+
+function ServiceCard({
+  track,
+  image,
+  alt,
+  cta,
+  detailsLabel,
+  audienceLabel,
+}: {
+  track: Track;
+  image: typeof sceneKasir;
+  alt: string;
+  cta: string;
+  detailsLabel: string;
+  audienceLabel: string;
+}) {
+  const tone = TRACK_TONE[track.tone];
+  const headingId = `layanan-${track.tone}`;
 
   return (
-    <section className="relative overflow-hidden border-b border-line bg-canvas">
-      <Container className="relative py-20 sm:py-28 lg:py-36">
-        {/* Satu `reveal` untuk seluruh blok ajakan, bukan satu per baris:
-            ini kalimat pembuka situs, dan kalimat pembuka tidak boleh
-            datang sepotong-sepotong. Angka di bawahnya yang dapat
-            perlakuan berbeda. */}
-        <div className="reveal">
-          <p className="eyebrow">{copy.eyebrow}</p>
-
-          <h1 className="display mt-5 text-[2.5rem] leading-[1.05] sm:text-6xl lg:text-7xl">
-            {copy.title.line1}
-            <br />
-            {copy.title.line2}
-            <span className="text-accent">{copy.title.accent}</span>
-          </h1>
-
-          <p className="mt-7 max-w-xl text-base leading-relaxed text-ink-muted sm:text-lg">
-            {copy.lede.before}
-            <strong className="font-semibold text-ink">
-              {copy.lede.strong}
-            </strong>
-            {copy.lede.after}
-          </p>
-
-          <div className="mt-9 flex flex-wrap gap-3">
-            <DiscoveryButton {...discoveryProps(lang)} />
-            <a href="#portfolio" className="btn btn-ghost px-5">
-              {copy.ctaSecondary}
-            </a>
+    <article
+      aria-labelledby={headingId}
+      className={`reveal flex flex-col gap-[22px] rounded-[28px] p-[clamp(20px,3vw,32px)] ${tone.card}`}
+    >
+      <Image
+        src={image}
+        alt={alt}
+        sizes="(min-width: 760px) 400px, 100vw"
+        className="block h-auto w-full max-w-[400px] rounded-[18px]"
+      />
+      <div>
+        <span className={`chip ${tone.chip} ${tone.label}`}>{track.label}</span>
+        <h3
+          id={headingId}
+          className="mt-3 text-[clamp(28px,2.8vw,34px)] leading-[1.1]"
+        >
+          {track.title}
+        </h3>
+        <p className={`mt-2 text-[16px] ${tone.muted}`}>{track.subtitle}</p>
+      </div>
+      <ul aria-label={audienceLabel} className="flex flex-wrap gap-2">
+        {track.audience.map((item) => (
+          <li key={item} className={`chip ${tone.chip}`}>
+            {item}
+          </li>
+        ))}
+      </ul>
+      <dl className="grid grid-cols-3 gap-3">
+        {track.stats.map((stat) => (
+          <div key={stat.label} className="min-w-0">
+            <dt className={`site-num text-[24px] ${tone.number}`}>{stat.value}</dt>
+            <dd className={`mt-0.5 text-[14px] ${tone.muted}`}>{stat.label}</dd>
           </div>
+        ))}
+      </dl>
+      <details className={`site-more border-t pt-1.5 ${tone.rule}`}>
+        <summary>
+          {detailsLabel}
+          <span aria-hidden className={`plus ${tone.label}`}>
+            +
+          </span>
+        </summary>
+        <ul
+          className={`mt-1 mb-2 grid list-disc gap-1.5 pl-5 text-[15px] leading-[1.55] ${tone.list}`}
+        >
+          {track.details.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </details>
+      <a
+        href="#kontak"
+        data-track="discovery_cta"
+        className={`mt-auto self-start ${tone.button}`}
+      >
+        {cta}
+      </a>
+    </article>
+  );
+}
+
+export function Services({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const services = copy.services;
+  const [kitchen, storefront] = services.tracks;
+  const shared = {
+    cta: services.cta,
+    detailsLabel: services.detailsLabel,
+    audienceLabel: services.audienceLabel,
+  };
+
+  return (
+    <section
+      id="layanan"
+      aria-labelledby="h-layanan"
+      className="bg-cream-surface py-[clamp(72px,9vw,120px)]"
+    >
+      <Container>
+        <h2 id="h-layanan" className="site-h2 reveal max-w-[16ch]">
+          {services.title}
+        </h2>
+        <p className="reveal reveal-late mt-4 max-w-[44ch] text-[18px] leading-[1.6] text-ink-muted">
+          {services.lede}
+        </p>
+        <div className="stagger mt-[clamp(36px,5vw,56px)] grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] gap-6">
+          <ServiceCard
+            track={kitchen}
+            image={sceneKasir}
+            alt={copy.mascots.kitchen}
+            {...shared}
+          />
+          <ServiceCard
+            track={storefront}
+            image={sceneLaptop}
+            alt={copy.mascots.storefront}
+            {...shared}
+          />
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ================================================================== */
+/* Rekam jejak                                                         */
+/* ================================================================== */
+
+export function Proof({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const proof = copy.proof;
+
+  return (
+    <section
+      id="portfolio"
+      aria-labelledby="h-portfolio"
+      className="pt-[clamp(80px,10vw,128px)] pb-[clamp(64px,8vw,104px)]"
+    >
+      <Container>
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <div className="reveal min-w-0 flex-[1_1_380px]">
+            <h2 id="h-portfolio" className="site-h2 max-w-[15ch]">
+              {proof.title}
+            </h2>
+            <p className="mt-4 max-w-[42ch] text-[18px] leading-[1.6] text-ink-muted">
+              {proof.lede}
+            </p>
+          </div>
+          <Image
+            src={cikoExcited}
+            alt={copy.mascots.proof}
+            sizes="200px"
+            className="reveal-pop -mb-4 block h-auto w-[clamp(130px,15vw,200px)]"
+          />
         </div>
 
-        {/* Empat angka yang sama yang dipakai di seluruh halaman. Ditaruh di
-            atas lipatan karena inilah yang membedakan halaman ini dari
-            halaman jasa mana pun: klaimnya bisa dihitung. */}
-        {/* `stagger` memberi keempatnya jeda gulir yang berbeda-beda, jadi
-            angkanya menetas berurutan alih-alih menyala serentak seperti
-            papan skor. */}
-        <dl className="stagger mt-14 grid max-w-3xl grid-cols-2 gap-x-6 gap-y-7 border-t border-line pt-8 sm:grid-cols-4">
-          {copy.stats.map((stat) => (
-            <div key={stat.label} className="reveal-pop">
-              <dt className="display text-2xl text-accent sm:text-3xl">
-                {stat.value}
-              </dt>
-              <dd className="mt-1.5 text-xs leading-snug text-ink-muted">
-                {stat.label}
+        <ul className="stagger mt-[clamp(32px,5vw,48px)] grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-5">
+          {proof.cases.map((item) => (
+            <li
+              key={item.name}
+              className="reveal flex flex-col gap-3.5 rounded-[22px] border border-cream-line bg-cream-surface p-6"
+            >
+              <span
+                className={`chip self-start ${
+                  item.track === "kitchen"
+                    ? "bg-accent-soft text-accent-hover"
+                    : "bg-forest-soft text-[#065f46]"
+                }`}
+              >
+                {proof.trackLabel[item.track]}
+              </span>
+              {item.value ? (
+                <div>
+                  <div className="site-num text-[44px] leading-none">
+                    {item.value}
+                  </div>
+                  <div className="mt-1.5 text-[15px] text-ink-muted">
+                    {item.result}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[26px] leading-[1.2] font-extrabold">
+                  {item.result}
+                </p>
+              )}
+              <div>
+                <h3 className="text-[18px]">{item.name}</h3>
+                <p className="mt-0.5 text-[14px] text-ink-muted">
+                  {item.meta}
+                  {item.url && (
+                    <>
+                      {" · "}
+                      <a
+                        href={`https://${item.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {item.url}
+                      </a>
+                    </>
+                  )}
+                </p>
+              </div>
+              <details className="site-more mt-auto border-t border-cream-line">
+                <summary>
+                  {proof.storyLabel}
+                  <span aria-hidden className="plus text-[22px] text-accent">
+                    +
+                  </span>
+                </summary>
+                <p className="mb-2 text-[14px] leading-[1.55] text-[#22344d]">
+                  {item.story}
+                </p>
+              </details>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 text-[13px] text-ink-muted">{copy.footnote}</p>
+      </Container>
+    </section>
+  );
+}
+
+/* ================================================================== */
+/* Nilai                                                               */
+/* ================================================================== */
+
+export function ValueDoctrine({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const value = copy.value;
+
+  return (
+    <section
+      aria-labelledby="h-nilai"
+      className="bg-night py-[clamp(72px,9vw,112px)] text-ink-inverse"
+    >
+      <Container className="flex flex-wrap items-center gap-[clamp(28px,5vw,64px)]">
+        <Image
+          src={dekoWink}
+          alt={copy.mascots.value}
+          sizes="340px"
+          className="reveal-pop block h-auto w-full max-w-[340px] min-w-0 flex-[0_1_340px]"
+        />
+        <div className="reveal reveal-late min-w-0 flex-[1_1_440px]">
+          <h2 id="h-nilai" className="site-h2">
+            {value.title}
+          </h2>
+          <blockquote className="mt-5 max-w-[30ch] text-[clamp(21px,2.1vw,27px)] leading-[1.35] font-semibold text-accent-bright">
+            &ldquo;{value.quote}&rdquo;
+          </blockquote>
+          <ul className="mt-7 flex flex-wrap gap-2.5">
+            {value.items.map((item) => (
+              <li
+                key={item}
+                className="chip bg-night-soft px-4 py-2.5 text-[15px] text-ink-inverse"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-[18px] max-w-[50ch] text-[15px] leading-[1.6] text-[#c3cfdd]">
+            {value.note}
+          </p>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ================================================================== */
+/* Proses                                                              */
+/* ================================================================== */
+
+function StepNumber({ n, last }: { n: number; last: boolean }) {
+  return (
+    <span
+      className={`site-num flex size-11 flex-none items-center justify-center rounded-full text-[18px] ${
+        last ? "bg-mint text-ink" : "bg-night text-accent-bright"
+      }`}
+    >
+      {n}
+    </span>
+  );
+}
+
+export function Process({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const steps = copy.process.steps;
+
+  return (
+    <section
+      id="proses"
+      aria-labelledby="h-proses"
+      className="bg-cream-surface pt-[clamp(80px,9vw,120px)] pb-[clamp(56px,7vw,88px)]"
+    >
+      <Container>
+        <h2 id="h-proses" className="site-h2 reveal max-w-[16ch]">
+          {copy.process.title}
+        </h2>
+        <div className="mt-[clamp(36px,5vw,56px)] flex flex-wrap items-end gap-7">
+          <ol className="stagger grid min-w-0 flex-[1_1_720px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-x-5 gap-y-7">
+            {steps.map((step, index) => {
+              const last = index === steps.length - 1;
+              return (
+                <li key={step.title} className="reveal">
+                  {last ? (
+                    <StepNumber n={index + 1} last />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <StepNumber n={index + 1} last={false} />
+                      {/* Garis putus-putus ke tahap berikutnya. Saat kisi
+                          membungkus ke baris baru, garisnya tetap menunjuk
+                          ke kanan, dan itu disengaja: urutannya tetap
+                          dibaca dari angka, bukan dari garis. */}
+                      <svg aria-hidden width="100%" height="6" className="block">
+                        <line
+                          x1="3"
+                          y1="3"
+                          x2="99%"
+                          y2="3"
+                          stroke="#93b4f5"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeDasharray="9 9"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                  <h3 className="mt-3.5 text-[17px] leading-[1.3]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-1 text-[15px] leading-[1.5] text-ink-muted">
+                    {step.body}
+                  </p>
+                </li>
+              );
+            })}
+          </ol>
+          <Image
+            src={dekoFront}
+            alt={copy.mascots.process}
+            sizes="230px"
+            className="reveal-pop block h-auto w-full max-w-[230px] min-w-0 flex-[0_1_230px]"
+          />
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/* ================================================================== */
+/* Tentang                                                             */
+/* ================================================================== */
+
+export function About({ lang }: { lang: Lang }) {
+  const copy = COPY[lang];
+  const about = copy.about;
+
+  return (
+    <section
+      id="tentang"
+      aria-labelledby="h-tentang"
+      className="py-[clamp(72px,9vw,120px)]"
+    >
+      <Container>
+        <div className="flex flex-wrap items-center gap-[clamp(28px,5vw,64px)]">
+          <figure className="reveal m-0 min-w-0 flex-[1_1_340px]">
+            <Image
+              src={sceneJalan}
+              alt={copy.mascots.about}
+              sizes="(min-width: 760px) 500px, 100vw"
+              className="block h-auto w-full max-w-[500px] rounded-[22px]"
+            />
+            <figcaption className="mt-2.5 text-[14px] text-ink-muted">
+              {about.location}
+            </figcaption>
+          </figure>
+          <div className="reveal reveal-late min-w-0 flex-[1.1_1_420px]">
+            <h2 id="h-tentang" className="site-h2 max-w-[14ch]">
+              {about.title}
+            </h2>
+            <p className="mt-[18px] max-w-[46ch] text-[18px] leading-[1.6] text-[#22344d]">
+              {about.body}
+            </p>
+            <p className="mt-5 max-w-[30ch] text-[21px] leading-[1.35] font-extrabold text-forest">
+              {about.measure}
+            </p>
+          </div>
+        </div>
+        <dl className="stagger mt-[clamp(40px,6vw,64px)] grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-4">
+          {about.facts.map((fact) => (
+            <div
+              key={fact.label}
+              className="reveal rounded-[18px] border border-cream-line bg-cream-surface px-5 py-[18px]"
+            >
+              <dt className="site-num text-[24px]">{fact.value}</dt>
+              <dd className="mt-1 text-[14px] leading-[1.45] text-ink-muted">
+                {fact.label}
               </dd>
             </div>
           ))}
@@ -144,520 +603,46 @@ function HeroBody({ lang }: { lang: Lang }) {
   );
 }
 
-export function Hero({ lang }: { lang: Lang }) {
-  return (
-    <>
-      <HeroSplash lang={lang} />
-      <HeroBody lang={lang} />
-    </>
-  );
-}
-
-/* ================================================================== */
-/* 01 · Filosofi                                                       */
-/* ================================================================== */
-
-export function Philosophy({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].philosophy;
-
-  return (
-    <Section id="filosofi" tone="canvas">
-      <Eyebrow>{copy.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.title}</SectionTitle>
-
-      <div className="mt-10 max-w-2xl">
-        <p className="text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base">
-          {copy.body[0]}
-        </p>
-        <p className="mt-4 text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base">
-          {copy.body[1]}
-        </p>
-      </div>
-
-      <div className="stagger mt-8 grid gap-5 md:grid-cols-2">
-        <div className="reveal rounded-lg bg-accent p-5 text-ink-inverse sm:p-6">
-          <p className="display text-xl">{copy.empowering.title}</p>
-          <p className="mt-2 text-sm leading-relaxed text-white/85">
-            {copy.empowering.body}
-          </p>
-        </div>
-
-        <div className="reveal rounded-lg border border-line-strong bg-surface-muted p-5 sm:p-6">
-          <p className="display text-xl">{copy.craft.title}</p>
-          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-            {copy.craft.body}
-          </p>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ================================================================== */
-/* 02 · Layanan                                                        */
-/* ================================================================== */
-
-/**
- * Dua layanan, ditumpuk — bukan disandingkan.
- *
- * Sebelumnya keduanya berdiri berdampingan di kisi dua kolom, dan itu
- * membuat pengunjung membacanya sebagai menu: dua kotak yang harus
- * dibanding-bandingkan dalam satu pandangan, masing-masing terpotong
- * setengah lebar layar. Sekarang tiap kartu memakai lebar penuh dan
- * `position: sticky`: kartu pertama berhenti di bawah bilah nav dan
- * bertahan di sana sementara kartu berikutnya naik menimpanya. Yang
- * dibaca jadi satu layanan pada satu waktu, dengan ruang cukup untuk
- * menaruh isinya di dua kolom sendiri.
- *
- * Mekanismenya CSS murni — `top` bertingkat per kartu (tiap kartu
- * berhenti 1,25rem lebih rendah dari kartu sebelumnya, menyisakan bibir
- * tipis kartu di baliknya) plus `z-index` menaik supaya yang datang
- * belakangan menutupi. Tidak ada observer, tidak ada state; sama
- * anggarannya dengan `.reveal` di globals.css.
- *
- * Baru menempel dari `md` ke atas. Kartu yang lebih tinggi dari viewport
- * tidak bisa ditempelkan tanpa memotong bagian bawahnya — di layar
- * sempit isinya menumpuk vertikal dan tingginya melewati batas itu, jadi
- * di sana kartunya kembali jadi tumpukan biasa.
- *
- * Kartu di sini sengaja TIDAK memakai `.reveal` seperti kartu di seksi
- * lain: reveal menggeser elemen lewat `transform` sepanjang gulir, dan
- * pergeseran itu berlaku di atas posisi yang sudah ditahan `sticky` —
- * kartu yang seharusnya diam justru bergetar naik-turun mengikuti gulir.
- */
-export function Services({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].services;
-
-  return (
-    <Section id="layanan" tone="night" className="py-16 sm:py-20">
-      <Eyebrow tone="light">{copy.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.title}</SectionTitle>
-      <Lede tone="light">{copy.lede}</Lede>
-
-      {/* Tinggi tumpukan = jumlah tinggi kartu; itu yang memberi gulir
-          ruang untuk memindahkan kartu berikutnya ke atas kartu yang
-          sedang menempel. Karena itu jaraknya `mb-*` di kartu, bukan
-          `gap` di sini. */}
-      <div className="relative mt-8">
-        {copy.tracks.map((track, index) => (
-          <article
-            key={track.title}
-            style={{
-              top: `calc(4.5rem + ${index * 1}rem)`,
-              zIndex: index + 1,
-            }}
-            // min-h: kartu setinggi isinya, dijaga cukup tinggi supaya
-            // tumpukannya masih terbaca sebelum tertimpa kartu berikutnya.
-            className={`relative mb-4 flex flex-col justify-center overflow-hidden rounded-xl p-5 sm:p-7 md:sticky md:min-h-[18rem] lg:p-9 ${
-              track.tone === "night"
-                ? "bg-night-soft ring-1 ring-white/10"
-                : "bg-forest ring-1 ring-white/10"
-            }`}
-          >
-            {/* Nomor raksasa di latar — penanda urutan yang tetap terbaca
-                sebagai tekstur, bukan sebagai teks. Disembunyikan dari
-                pembaca layar; urutannya sudah ada di eyebrow. */}
-            <span
-              aria-hidden
-              className="display pointer-events-none absolute -right-3 -bottom-8 text-[7rem] leading-none text-white/[0.05] select-none sm:-right-4 sm:text-[10rem]"
-            >
-              0{index + 1}
-            </span>
-
-            <div className="relative grid gap-6 lg:grid-cols-[minmax(0,18rem)_1fr] lg:gap-10">
-              <div>
-                <p
-                  className={`eyebrow ${
-                    track.tone === "night"
-                      ? "text-accent-bright"
-                      : "text-forest-soft"
-                  }`}
-                >
-                  {track.eyebrow}
-                </p>
-                <h3 className="display mt-2 text-2xl text-ink-inverse sm:text-3xl">
-                  {track.title}
-                </h3>
-                <p className="mt-1.5 text-sm text-ink-inverse-muted italic">
-                  {track.subtitle}
-                </p>
-
-                <DiscoveryButton
-                  {...discoveryProps(lang)}
-                  className="btn mt-5 border-white/20 px-5 text-ink-inverse hover:bg-white/10"
-                >
-                  {copy.cta}
-                </DiscoveryButton>
-              </div>
-
-              <div className="border-t border-white/12 pt-5 lg:border-t-0 lg:border-l lg:border-white/12 lg:pt-0 lg:pl-10">
-                <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                  {track.rows.map((row) => (
-                    <div key={row.label}>
-                      <dt className="text-xs font-medium tracking-wide text-ink-inverse-muted uppercase">
-                        {row.label}
-                      </dt>
-                      <dd className="mt-1 text-sm leading-snug text-ink-inverse">
-                        {row.value}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-
-                {/* Skema investasi — dulu seksi "06 · Investasi" berdiri
-                    sendiri, sekarang jadi bagian kartu ini. */}
-                <div className="mt-5 border-t border-white/12 pt-5">
-                  <p className="text-xs font-medium tracking-wide text-ink-inverse-muted uppercase">
-                    {copy.investmentLabel}
-                  </p>
-                  <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
-                    {track.investment.map((point) => (
-                      <li
-                        key={point}
-                        className="flex gap-2 text-sm leading-snug text-ink-inverse"
-                      >
-                        <span
-                          aria-hidden
-                          className={
-                            track.tone === "night"
-                              ? "text-accent-bright"
-                              : "text-forest-soft"
-                          }
-                        >
-                          ✓
-                        </span>
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/* ================================================================== */
-/* Hasil per jalur                                                     */
-/* ================================================================== */
-
-function OutcomeGrid({
-  items,
-  accent,
-}: {
-  items: Outcome[];
-  accent: "accent" | "forest";
-}) {
-  return (
-    <div className="stagger grid gap-5 md:grid-cols-3">
-      {items.map((item) => (
-        <article
-          key={item.title}
-          className="reveal card flex flex-col p-6 sm:p-7"
-          // Garis warna di tepi atas — penanda jalur, meniru kartu di deck.
-          style={{
-            borderTop: `3px solid var(--color-${accent})`,
-          }}
-        >
-          <p
-            className={`display text-3xl sm:text-4xl ${
-              accent === "accent" ? "text-accent" : "text-forest"
-            }`}
-          >
-            {item.metric}
-          </p>
-          <p className="mt-2 text-xs text-ink-subtle italic">{item.caption}</p>
-          <h3 className="mt-4 font-sans text-base font-semibold">
-            {item.title}
-          </h3>
-          <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">
-            {item.body}
-          </p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-export function Outcomes({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].outcomes;
-
-  return (
-    <Section tone="muted">
-      <Eyebrow>{copy.kitchen.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.kitchen.title}</SectionTitle>
-      <div className="mt-10">
-        <OutcomeGrid items={copy.kitchen.items} accent="accent" />
-      </div>
-
-      <div className="mt-20">
-        <Eyebrow>{copy.storefront.eyebrow}</Eyebrow>
-        <SectionTitle>{copy.storefront.title}</SectionTitle>
-        <div className="mt-10">
-          <OutcomeGrid items={copy.storefront.items} accent="forest" />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ================================================================== */
-/* 03 · Portfolio                                                      */
-/* ================================================================== */
-
-export function Proof({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].proof;
-
-  return (
-    <Section id="portfolio" tone="night">
-      <Eyebrow tone="light">{copy.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.title}</SectionTitle>
-      <Lede tone="light">{copy.lede}</Lede>
-
-      <div className="stagger mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {copy.cases.map((item) => (
-          <article
-            key={item.no}
-            className="reveal flex flex-col rounded-lg bg-night-soft p-6 ring-1 ring-white/10"
-          >
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="display text-2xl text-ink-inverse-muted">
-                {item.no}
-              </span>
-              <span
-                className={`eyebrow ${
-                  item.track === "kitchen"
-                    ? "text-accent-bright"
-                    : "text-forest-soft"
-                }`}
-              >
-                {copy.trackLabel[item.track]}
-              </span>
-            </div>
-
-            <h3 className="mt-3 font-sans text-lg leading-snug font-semibold text-ink-inverse">
-              {item.name}
-            </h3>
-            <p className="mt-1 text-sm text-accent-bright">{item.kind}</p>
-            {item.url && (
-              <a
-                href={`https://${item.url}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 inline-block w-fit font-mono text-xs text-forest-soft underline underline-offset-2 hover:text-ink-inverse"
-              >
-                {item.url} ↗
-              </a>
-            )}
-            <p className="mt-3 font-mono text-[0.6875rem] leading-relaxed text-ink-inverse-muted">
-              {item.meta}
-            </p>
-
-            <p className="mt-4 border-l-2 border-white/15 pl-3 text-xs leading-relaxed text-ink-inverse-muted italic">
-              {item.before}
-            </p>
-
-            <dl className="mt-5 space-y-2.5 border-t border-white/12 pt-5">
-              {item.stats.map((stat) => (
-                <div key={stat.label} className="flex items-baseline gap-3">
-                  <dt className="display shrink-0 text-base text-accent-bright">
-                    {stat.value}
-                  </dt>
-                  <dd className="text-xs leading-snug text-ink-inverse-muted">
-                    {stat.label}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </article>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/* ================================================================== */
-/* 04 · Proposisi nilai                                                */
-/* ================================================================== */
-
-export function ValueDoctrine({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].value;
-
-  return (
-    <Section tone="canvas">
-      <Eyebrow>{copy.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.title}</SectionTitle>
-
-      <blockquote className="reveal reveal-late mt-8 max-w-3xl border-l-2 border-accent pl-5 sm:pl-6">
-        {/* Miring saja, tanpa berpindah keluarga huruf: sejak Lora
-            dilepas, satu-satunya serif yang tersisa adalah serif bawaan
-            sistem — dan Georgia yang nyempil di antara Sora dan Jakarta
-            terbaca seperti kutipan yang tertempel dari dokumen lain. */}
-        <p className="text-lg leading-relaxed italic sm:text-xl">
-          &ldquo;{copy.quote}&rdquo;
-        </p>
-      </blockquote>
-
-      {/* Pagar §4 brand doc, ditulis eksplisit di halaman. Tanpa kalimat
-          ini, tiga kartu di bawahnya gampang terbaca sebagai isyarat bahwa
-          harganya bisa ditawar — persis kebalikan maksudnya. */}
-      <p className="mt-6 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-muted">
-        {copy.note.before}
-        <strong className="font-semibold text-ink">{copy.note.strong}</strong>
-        {copy.note.after}
-      </p>
-
-      <div className="stagger mt-10 grid gap-5 md:grid-cols-3">
-        {copy.items.map((item) => (
-          <article key={item.no} className="reveal card p-6">
-            <span className="display inline-flex h-10 w-10 items-center justify-center rounded bg-accent text-sm text-white">
-              {item.no}
-            </span>
-            <h3 className="mt-4 font-sans text-lg font-semibold">
-              {item.title}
-            </h3>
-            <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">
-              {item.body}
-            </p>
-          </article>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/* ================================================================== */
-/* 05 · Proses                                                         */
-/* ================================================================== */
-
-export function Process({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].process;
-
-  return (
-    <Section id="proses" tone="muted">
-      <Eyebrow>{copy.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.title}</SectionTitle>
-      <Lede>{copy.lede}</Lede>
-
-      <ol className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-        {copy.steps.map((step) => (
-          <li key={step.no} className="reveal card flex flex-col p-5">
-            <span className="display inline-flex h-9 w-9 items-center justify-center rounded bg-accent text-sm text-white">
-              {step.no}
-            </span>
-            <h3 className="mt-4 font-sans text-base leading-snug font-semibold">
-              {step.title}
-            </h3>
-            <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-              {step.body}
-            </p>
-          </li>
-        ))}
-      </ol>
-    </Section>
-  );
-}
-
-/* ================================================================== */
-/* Tentang                                                             */
-/* ================================================================== */
-
-/**
- * Rekam jejak, bukan profil.
- *
- * Yang dulu berdiri di sini adalah kartu nama: nama lengkap, jabatan,
- * tautan portofolio pribadi. Sekarang yang tampil hasilnya saja — lihat
- * komentar `about` di copy-id.ts untuk alasannya. Karena itu pula
- * angka-angkanya naik dari kolom samping jadi kisi utama: mereka bukan
- * lagi lampiran dari sebuah profil, mereka isi seksinya.
- */
-export function About({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].about;
-
-  return (
-    <Section tone="canvas" className="py-16 sm:py-20">
-      <Eyebrow>{copy.eyebrow}</Eyebrow>
-      <SectionTitle>{copy.title}</SectionTitle>
-      <p className="mt-2 font-mono text-xs tracking-wide text-ink-subtle uppercase">
-        {copy.location}
-      </p>
-
-      <div className="mt-6 max-w-2xl space-y-3">
-        {copy.body.map((paragraph) => (
-          <p
-            key={paragraph}
-            className="text-[0.9375rem] leading-relaxed text-ink-muted sm:text-base"
-          >
-            {paragraph}
-          </p>
-        ))}
-      </div>
-
-      {/* Deret angka rapat, bukan kisi tiga baris — pola "impact snapshot"
-          yang sama dipakai di abiyyuhanief.id/#the-journey: satu baris
-          padat di layar lebar, dibaca sebagai satu rekam jejak. */}
-      <dl className="stagger mt-8 grid grid-cols-2 gap-x-6 gap-y-6 border-t border-line pt-6 sm:grid-cols-3 lg:grid-cols-5">
-        {copy.facts.map((fact) => (
-          // `reveal-pop`, bukan `reveal`: sama seperti statistik hero,
-          // ini angka — dan angka yang menetas terbaca sebagai capaian.
-          <div key={fact.label} className="reveal-pop">
-            <dt className="display text-2xl text-forest sm:text-3xl">
-              {fact.value}
-            </dt>
-            <dd className="mt-1.5 text-xs leading-snug text-ink-muted">
-              {fact.label}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </Section>
-  );
-}
-
 /* ================================================================== */
 /* Kontak                                                              */
 /* ================================================================== */
 
 /**
- * Seksi penutup — sekarang murni satu ajakan.
- *
- * Sebelumnya ia berisi empat kartu kanal kontak dan dua tautan silang ke
- * seksi pendekatan. Enam pilihan di layar terakhir berarti enam
- * kesempatan untuk ragu; yang terjadi bukan pengunjung memilih dengan
- * lebih baik, melainkan tidak memilih sama sekali. Sekarang tinggal satu
- * tombol besar dan satu jalur cadangan untuk yang memang lebih suka
- * mengetik langsung.
+ * Seksi penutup: form sesi discovery terpasang langsung, tanpa tombol
+ * yang harus diklik dulu. Semua ajakan lain di halaman ini cuma jangkar
+ * ke sini.
  */
 export function Contact({ lang }: { lang: Lang }) {
-  const copy = COPY[lang].contact;
+  const copy = COPY[lang];
 
   return (
-    <Section id="kontak" tone="night">
-      <div className="mx-auto max-w-2xl text-center">
-        <Eyebrow tone="light">{copy.eyebrow}</Eyebrow>
-        <SectionTitle className="text-4xl sm:text-5xl">
-          {copy.title}
-        </SectionTitle>
-        <p className="reveal reveal-late mt-5 text-base leading-relaxed text-ink-inverse-muted">
-          {copy.lede}
-        </p>
-
-        <div className="reveal reveal-late mt-9 flex flex-wrap justify-center gap-3">
-          <DiscoveryButton {...discoveryProps(lang)} className="btn btn-accent px-6" />
-          <a
-            href={waLink(COPY[lang].waMessage)}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-track="whatsapp_cta"
-            className="btn border-white/20 px-6 text-ink-inverse hover:bg-white/5"
+    <section
+      id="kontak"
+      aria-labelledby="h-kontak"
+      className="bg-night py-[clamp(80px,9vw,120px)] text-ink-inverse"
+    >
+      <Container className="flex flex-wrap items-center gap-[clamp(32px,5vw,64px)]">
+        <div className="reveal min-w-0 flex-[1_1_340px]">
+          <h2
+            id="h-kontak"
+            className="site-h2 max-w-[12ch] text-[clamp(34px,4.4vw,56px)]"
           >
-            {copy.ctaSecondary}
-          </a>
+            {copy.contact.title}
+          </h2>
+          <p className="mt-[18px] max-w-[36ch] text-[18px] leading-[1.6] text-[#c3cfdd]">
+            {copy.contact.lede}
+          </p>
+          <Image
+            src={cikoChill}
+            alt={copy.mascots.contact}
+            sizes="200px"
+            className="reveal-pop mt-6 block h-auto w-[clamp(140px,15vw,200px)]"
+          />
         </div>
-      </div>
-    </Section>
+        <div className="reveal reveal-late min-w-0 flex-[1_1_420px] rounded-[28px] bg-cream-surface p-[clamp(24px,3.5vw,40px)] text-ink shadow-[0_14px_36px_-12px_rgba(0,0,0,0.5)]">
+          <DiscoveryForm {...discoveryProps(lang)} />
+        </div>
+      </Container>
+    </section>
   );
 }

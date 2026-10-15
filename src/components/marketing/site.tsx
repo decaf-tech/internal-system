@@ -1,19 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AnalyticsBeacon } from "./analytics-beacon";
 import { COPY, HOME, LANGS, type Lang } from "./copy";
+import { nunito } from "./fonts";
 import { RevealOnScroll } from "./reveal-on-scroll";
 import {
   About,
   Contact,
   Hero,
-  Outcomes,
   Philosophy,
   Process,
   Proof,
   Services,
   ValueDoctrine,
 } from "./sections";
-import { SiteFooter, SiteNav } from "./shell";
+import { SiteFooter } from "./shell";
 
 /**
  * Situs publik Decaf, utuh dalam satu bahasa.
@@ -32,19 +32,19 @@ import { SiteFooter, SiteNav } from "./shell";
  * cukup untuk pembaca layar dan untuk pemenggalan kata browser.
  * `display: contents` menjaga pembungkusnya tidak ikut menghitung tata
  * letak: header, main, dan footer tetap jadi anak langsung `<body>` yang
- * flex, persis seperti sebelum pembungkus ini ada.
+ * flex, persis seperti sebelum pembungkus ini ada. Variabel huruf dan
+ * kelas `.site` tetap diwariskan ke turunannya: pewarisan CSS mengikuti
+ * pohon DOM, bukan kotak tata letak.
  */
 export function MarketingSite({ lang }: { lang: Lang }) {
   return (
-    <div lang={lang} className="contents">
+    <div lang={lang} className={`site contents ${nunito.variable}`}>
       <RevealOnScroll />
       <AnalyticsBeacon lang={lang} />
-      <SiteNav lang={lang} />
-      <main className="flex-1">
-        <Hero lang={lang} />
+      <Hero lang={lang} />
+      <main className="flex-1 bg-cream">
         <Philosophy lang={lang} />
         <Services lang={lang} />
-        <Outcomes lang={lang} />
         <Proof lang={lang} />
         <ValueDoctrine lang={lang} />
         <Process lang={lang} />
@@ -80,3 +80,6 @@ export function marketingMetadata(lang: Lang): Metadata {
     },
   };
 }
+
+/** Bilah browser di ponsel ikut navy, menyambung dengan hero. */
+export const marketingViewport: Viewport = { themeColor: "#081f3b" };

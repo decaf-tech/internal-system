@@ -53,9 +53,9 @@ export const metadata: Metadata = {
   // calon klien — versi Indonesia, bahasa bawaan situs. Halaman `/` dan
   // `/en` masing-masing menimpanya dengan judulnya sendiri, dan wilayah
   // backoffice mengambilnya kembali di layout-nya sendiri.
-  title: "Decaf Tech — Transformasi Digital yang Memanusiakan",
+  title: "Decaf Tech | Transformasi Digital yang Memanusiakan",
   description:
-    "Sistem custom yang Anda miliki, bukan Anda sewa. Rekap harian jadi satu klik, error pencatatan 0%, biaya server Rp 0/bulan.",
+    "Sistem custom yang Anda miliki, bukan Anda sewa. Kasir, keuangan, stok, dan situs dengan CMS, dibangun khusus untuk bisnis Anda.",
   // Ditambahkan supaya layar-penuh "Add to Home Screen" di iOS tidak
   // memakai judul panjang di bawah ikonnya.
   appleWebApp: { title: "Decaf Tech", capable: true },
@@ -88,18 +88,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
-        {/* Menandai `<html>` bahwa JavaScript hidup, SEBELUM cat
-            pertama (`beforeInteractive` — Next menyuntikkannya ke
-            `<head>`, dijalankan sebelum bodinya sendiri dirender).
-            `.reveal`/`.reveal-pop` di globals.css cuma disembunyikan di
-            bawah `html.js`; tanpa baris ini (atau kalau skripnya gagal
-            dimuat) elemen-elemen itu tidak pernah tersembunyi sama
-            sekali, jadi halaman publik tetap terbaca penuh tanpa
-            JavaScript — cuma tanpa efek larutnya. Dipasang di layout
-            akar (dipakai backoffice juga) supaya cukup satu skrip,
-            bukan digandakan di tiap rute publik (`/`, `/en`); tidak
-            berpengaruh apa-apa di backoffice karena tidak ada elemen
-            `.reveal` di sana. */}
+        {/* Menandai `<html>` bahwa JavaScript hidup, SEBELUM cat pertama
+            (`beforeInteractive` disuntikkan ke `<head>`). `.reveal` dan
+            `.reveal-pop` di globals.css cuma disembunyikan di bawah
+            `html.js`, jadi kalau skrip ini gagal, situs publik tetap
+            terbaca penuh, cuma tanpa efek munculnya. Tidak berpengaruh
+            di backoffice: tidak ada elemen `.reveal` di sana. */}
         <Script id="js-flag" strategy="beforeInteractive">
           {"document.documentElement.classList.add('js')"}
         </Script>

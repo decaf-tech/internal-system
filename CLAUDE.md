@@ -60,15 +60,33 @@ membalas 500.
 19 Agustus 2026 ada logo sungguhan dan palet warna resmi, jadi bagian
 tipografi & warna di PRD mana pun sudah kedaluwarsa; yang memegang
 kebenaran adalah blok `@theme` di `src/app/globals.css`. Ringkasnya:
-palet krem/terracotta diganti Deep Navy `#081f3b` · Tech Blue `#2563eb` ·
-Electric Blue `#22d3ee` · Mint `#10b981` · Light Gray `#e5e7eb`
-(kartu acuannya `docs/brand/color-palette.jpeg`), huruf display pindah
-dari Fredoka ke **Sora** dan Lora dilepas sama sekali — `font-serif`
-sekarang berarti serif bawaan sistem, bukan huruf brand, dan cuma dipakai
-dua glif tombol di `components/markdown-editor.tsx`. Logonya di
-`public/brand/`, dipasang lewat `src/components/brand.tsx` (jangan
-`<img>` langsung), dan ikon tab/PWA-nya di `src/app/icon.png`,
-`apple-icon.png`, `favicon.ico`.
+palet Deep Navy `#081f3b` · Tech Blue `#2563eb` · Electric Blue
+`#22d3ee` · Mint `#10b981` · Light Gray `#e5e7eb` (kartu acuannya
+`docs/brand/color-palette.jpeg`). Logonya di `public/brand/`, dipasang
+lewat `src/components/brand.tsx` (jangan `<img>` langsung), dan ikon
+tab/PWA-nya di `src/app/icon.png`, `apple-icon.png`, `favicon.ico`.
+
+**Situs publik dan backoffice sekarang beda huruf dan beda latar.** Sejak
+redesign homepage 16 Oktober 2026 (acuannya canvas Artifact Design
+`https://claude.ai/artifact/MECpURBPjnUaAtLHn62YrD`), situs publik di `/`
+dan `/en` memakai **Nunito** (judul 800, teks 400–700) dan latar krem
+yang diambil dari benang mascot: token `cream` `#fbf6ec` (latar),
+`cream-surface` `#fffdf8` (kartu), `cream-line` `#eadfca` (garis).
+Nunito dimuat di `src/components/marketing/fonts.ts`, bukan di layout
+akar, dan semua gaya situs publik dikurung di bawah kelas `.site` di
+`globals.css` (`.site-btn` tombol terangkat ala FinOS Personal,
+`.site-h2`, `.site-num`, `.chip`, `.site-more`, `.site-field`).
+Backoffice tidak berubah: **Sora** untuk display, Plus Jakarta Sans
+untuk teks, latar netral dingin. Lora sudah dilepas; `font-serif` cuma
+dipakai dua glif tombol di `components/markdown-editor.tsx`. Mascot
+rajutan Ciko (burung) & Deko (van) jadi pemandu halaman: versi web-nya
+(WebP terpangkas, ≤1000px) di `public/brand/mascot/web/`, tampil lewat
+`next/image`. PNG aslinya (±25 MB) sengaja tidak di-commit; cuma ada di
+`public/brand/mascot/` di mesin lokal. Setiap pose Deko sudah
+memuat Ciko di atap, jadi jangan pasang Ciko terpisah di frame yang
+sama. Setiap ajakan di situs publik cuma dua jenis: jangkar ke form sesi
+discovery (`#kontak`, form-nya inline, bukan modal) atau LinkedIn;
+footer cuma memajang LinkedIn.
 
 **Situs publik sekarang dua bahasa.** Indonesia tetap bawaan dan
 menempati `/`; versi Inggrisnya rute tersendiri di `/en`, ditukar lewat
@@ -77,7 +95,7 @@ tombol ID/EN di kanan atas bilah nav. Tidak ada cookie, tidak ada deteksi
 Seluruh teksnya di `src/components/marketing/copy-id.ts` dan
 `copy-en.ts`, dengan bentuk yang dipaksa sama oleh tipe `SiteCopy` di
 `copy.ts`; `content.ts` cuma menyimpan yang tidak berubah menurut bahasa
-(kontak, angka grafik). Menambah kalimat berarti menambahnya di kedua
+(alamat kontak). Tanpa em dash di copy. Menambah kalimat berarti menambahnya di kedua
 berkas — kompiler yang menolak kalau salah satu tertinggal. Jangkar
 seksi (`#filosofi`, `#layanan`, …) sengaja tetap berbahasa Indonesia di
 kedua versi. Bagian PRD mana pun yang mengutip teks halaman publik

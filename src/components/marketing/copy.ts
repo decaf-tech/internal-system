@@ -1,4 +1,3 @@
-import { waLink } from "./content";
 import { EN } from "./copy-en";
 import { ID } from "./copy-id";
 
@@ -52,35 +51,30 @@ export const LANG_NAME: Record<Lang, string> = {
  */
 export type Emphasized = { before: string; strong: string; after: string };
 
-export type Outcome = {
-  metric: string;
-  caption: string;
-  title: string;
-  body: string;
-};
+export type Stat = { value: string; label: string };
 
 export type Track = {
-  eyebrow: string;
+  /** Nama panggung layanan: "The Kitchen" / "The Storefront". */
+  label: string;
   title: string;
   subtitle: string;
   tone: "night" | "forest";
-  rows: { label: string; value: string }[];
-  investment: string[];
+  audience: string[];
+  stats: [Stat, Stat, Stat];
+  details: string[];
 };
 
 export type CaseStudy = {
-  no: string;
   name: string;
-  kind: string;
-  meta: string;
-  before: string;
   track: "kitchen" | "storefront";
-  stats: { value: string; label: string }[];
-  /** Domain yang live sekarang — cuma diisi untuk sistem yang punya alamat publik. */
+  /** Angka besar di kartu. Tanpa ini, `result` yang tampil sebagai judul. */
+  value?: string;
+  result: string;
+  meta: string;
+  /** Domain yang live sekarang, cuma untuk sistem yang punya alamat publik. */
   url?: string;
+  story: string;
 };
-
-export type NumberedItem = { no: string; title: string; body: string };
 
 export type SiteCopy = {
   meta: { title: string; description: string };
@@ -89,111 +83,123 @@ export type SiteCopy = {
     links: { href: string; label: string }[];
     /** `aria-label` deretan tautan seksi. */
     sections: string;
-    /** `aria-label` lambang yang menuju ke atas halaman. */
+    /** `aria-label` logo yang menuju ke atas halaman. */
     home: string;
     /** `aria-label` pengalih bahasa. */
     language: string;
     cta: string;
   };
 
+  /**
+   * Alt text tiap mascot, per tempat dipasangnya. Gambarnya sama di kedua
+   * bahasa, jadi cuma kalimatnya yang tinggal di sini.
+   */
+  mascots: {
+    hero: string;
+    philosophy: string;
+    kitchen: string;
+    storefront: string;
+    proof: string;
+    value: string;
+    process: string;
+    about: string;
+    contact: string;
+  };
+
+  /**
+   * Penjelas tanda bintang di angka 45%*. Dipasang di bawah pita angka
+   * hero dan di bawah kisi rekam jejak, dua tempat angka itu paling
+   * menonjol.
+   */
+  footnote: string;
+
   hero: {
-    splashEyebrow: string;
-    scroll: string;
-    eyebrow: string;
-    /** Judul dua baris; bagian `accent` diwarnai. */
-    title: { line1: string; line2: string; accent: string };
+    title: { before: string; accent: string };
     lede: Emphasized;
+    cta: string;
     ctaSecondary: string;
-    stats: { value: string; label: string }[];
+    stats: [Stat, Stat];
+    ownership: { title: string; body: string };
   };
 
   philosophy: {
-    eyebrow: string;
-    title: string;
-    body: [string, string];
-    empowering: { title: string; body: string };
-    craft: { title: string; body: string };
+    /** `aria-label` seksinya: dua kartunya tidak punya judul seksi. */
+    label: string;
+    cards: [{ title: string; body: string }, { title: string; body: string }];
   };
 
   services: {
-    eyebrow: string;
     title: string;
     lede: string;
     cta: string;
-    investmentLabel: string;
+    detailsLabel: string;
+    /** `aria-label` deretan chip "cocok untuk". */
+    audienceLabel: string;
     tracks: [Track, Track];
   };
 
-  outcomes: {
-    kitchen: { eyebrow: string; title: string; items: Outcome[] };
-    storefront: { eyebrow: string; title: string; items: Outcome[] };
-  };
-
   proof: {
-    eyebrow: string;
     title: string;
     lede: string;
     trackLabel: { kitchen: string; storefront: string };
+    storyLabel: string;
     cases: CaseStudy[];
   };
 
   value: {
-    eyebrow: string;
     title: string;
     quote: string;
-    note: Emphasized;
-    items: NumberedItem[];
+    items: string[];
+    note: string;
   };
 
   process: {
-    eyebrow: string;
     title: string;
-    lede: string;
-    steps: NumberedItem[];
+    steps: { title: string; body: string }[];
   };
 
   about: {
-    eyebrow: string;
     title: string;
     location: string;
-    body: string[];
-    facts: { value: string; label: string }[];
+    body: string;
+    measure: string;
+    facts: Stat[];
   };
 
   contact: {
-    eyebrow: string;
     title: string;
     lede: string;
-    ctaSecondary: string;
   };
 
   footer: {
     tagline: string;
+    /** Tautan ke versi bahasa lainnya. */
+    otherLang: string;
     backoffice: string;
   };
 
   /**
-   * Form sesi discovery — satu-satunya bagian halaman yang dikirim ke
+   * Form sesi discovery, satu-satunya bagian halaman yang dikirim ke
    * browser sebagai komponen klien, jadi isinya ikut terkirim sebagai
    * props. Karena itu ia disimpan sebagai cabang tersendiri: yang
    * menyeberang ke klien cukup cabang ini, bukan seluruh salinan situs.
    */
   discovery: {
-    cta: string;
     title: string;
-    intro: string;
     fields: {
-      phone: { label: string; placeholder: string; hint: string };
+      phone: { label: string; placeholder: string };
       business: { label: string; placeholder: string };
       interest: { label: string; placeholder: string };
     };
-    /** Label kolom umpan robot — tersembunyi dari mata & pembaca layar. */
+    /** Penanda di label kolom yang boleh dikosongkan. */
+    optional: string;
+    /** Label kolom umpan robot, tersembunyi dari mata & pembaca layar. */
     honeypot: string;
     submit: string;
     pending: string;
-    close: string;
     successTitle: string;
     successBody: string;
+    reset: string;
     fallback: string;
     fallbackLink: string;
     /** Pesan yang dikembalikan server action, lihat `discovery-actions.ts`. */
@@ -206,8 +212,6 @@ export type SiteCopy = {
     };
   };
 
-  /** Pesan pembuka WhatsApp — sudah terisi di kolom ketik. */
-  waMessage: string;
 };
 
 export const COPY: Record<Lang, SiteCopy> = { id: ID, en: EN };
@@ -218,18 +222,14 @@ export function isLang(value: string): value is Lang {
 }
 
 /**
- * Props untuk `DiscoveryButton` — satu-satunya komponen klien di situs
- * publik.
+ * Props untuk `DiscoveryForm`, satu-satunya komponen klien yang memuat
+ * teks situs.
  *
  * Dirakit di sini supaya yang menyeberang ke browser cuma cabang yang
  * dipakai formnya. Kalau komponen itu mengimpor `COPY` sendiri, kedua
- * bahasa situs ikut masuk ke bundel klien — dua puluh kilobyte teks yang
- * 100% sudah ada di HTML yang baru saja dikirim.
+ * bahasa situs ikut masuk ke bundel klien: belasan kilobyte teks yang
+ * sudah ada di HTML yang baru saja dikirim.
  */
 export function discoveryProps(lang: Lang) {
-  return {
-    lang,
-    copy: COPY[lang].discovery,
-    waHref: waLink(COPY[lang].waMessage),
-  };
+  return { lang, copy: COPY[lang].discovery };
 }

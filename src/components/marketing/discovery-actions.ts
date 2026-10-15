@@ -13,7 +13,18 @@ import { COPY, DEFAULT_LANG, isLang } from "./copy";
  * dipanggil tanpa melewati fungsi ini sama sekali.
  */
 
-export type DiscoveryState = { error: string | null; ok?: true };
+/**
+ * `field` menunjuk kolom yang ditolak, supaya form bisa menandai kolom
+ * itu saja. Kosong untuk kesalahan yang bukan milik satu kolom (semua
+ * kolom kosong, gagal simpan).
+ */
+export type DiscoveryField = "phone" | "business" | "interest";
+
+export type DiscoveryState = {
+  error: string | null;
+  field?: DiscoveryField;
+  ok?: true;
+};
 
 /** Sama persis dengan constraint `discovery_requests_length_check`. */
 const LIMIT = {
@@ -76,17 +87,19 @@ export async function submitDiscoveryRequest(
   const business = read(formData, "business");
   const interest = read(formData, "interest");
 
-  if (!phone || !business || !interest) {
+  // Cerita masalahnya opsional: nomor dan bidang bisnis sudah cukup untuk
+  // menghubungi, dan kolom yang terasa seperti esai membuat orang batal.
+  if (!phone || !business) {
     return { error: errors.empty };
   }
   if (!isPhoneLike(phone) || phone.length > LIMIT.phone.max) {
-    return { error: errors.phone };
+    return { error: errors.phone, field: "phone" };
   }
   if (business.length < LIMIT.business.min) {
-    return { error: errors.business };
+    return { error: errors.business, field: "business" };
   }
-  if (interest.length < LIMIT.interest.min) {
-    return { error: errors.interest };
+  if (interest && interest.length < LIMIT.interest.min) {
+    return { error: errors.interest, field: "interest" };
   }
 
   const supabase = await createClient();
@@ -97,7 +110,10 @@ export async function submitDiscoveryRequest(
     // bersemangat menjelaskan masalahnya — membuangnya karena kepanjangan
     // adalah cara paling mahal untuk kehilangan prospek.
     business: business.slice(0, LIMIT.business.max),
-    interest: interest.slice(0, LIMIT.interest.max),
+    // Kolom `interest` di basis data masih `not null` dengan panjang
+    // minimal 4 (migration 013). Penanda ini memenuhinya tanpa migration
+    // baru, dan terbaca jelas di kotak masuk backoffice.
+    interest: interest ? interest.slice(0, LIMIT.interest.max) : "(tidak diisi)",
   });
 
   if (error) {

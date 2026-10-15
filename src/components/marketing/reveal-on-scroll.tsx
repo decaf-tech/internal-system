@@ -38,7 +38,10 @@ export function RevealOnScroll() {
           observer.unobserve(entry.target);
         }
       },
-      { threshold: 0.4, rootMargin: "0px 0px -50px 0px" },
+      // Ambang 0 + margin bawah, bukan ambang persentase: kartu layanan di
+      // ponsel lebih tinggi dari layar, dan ambang 40% tidak pernah
+      // tercapai untuk elemen setinggi itu, jadi ia tidak pernah muncul.
+      { threshold: 0, rootMargin: "0px 0px -12% 0px" },
     );
 
     targets.forEach((el) => observer.observe(el));

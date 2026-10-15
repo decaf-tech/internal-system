@@ -1,4 +1,8 @@
-import { MarketingSite, marketingMetadata } from "@/components/marketing/site";
+import {
+  MarketingSite,
+  marketingMetadata,
+  marketingViewport,
+} from "@/components/marketing/site";
 
 /**
  * Versi bahasa Inggris dari halaman publik di akar.
@@ -8,6 +12,7 @@ import { MarketingSite, marketingMetadata } from "@/components/marketing/site";
  * statis sepenuhnya, dan pengunjung tidak pernah dilempar ke bahasa yang
  * bukan pilihannya. Isinya di `copy-en.ts`.
  */
+export const viewport = marketingViewport;
 export const metadata = marketingMetadata("en");
 
 export default function PublicHomePageEn() {
