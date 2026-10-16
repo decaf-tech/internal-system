@@ -59,8 +59,8 @@ export const EN: SiteCopy = {
   footnote: "*Measured methodologically.",
 
   hero: {
-    title: { before: "Digital transformation that ", accent: "empowers people." },
-    lede: { before: "Custom systems that ", strong: "you own", after: "" },
+    title: { before: "Digital transformation that ", accent: "puts people first." },
+    lede: { before: "Custom systems ", strong: "you own", after: "" },
     cta: "Free discovery session",
     ctaSecondary: "See the real numbers",
     stats: [
@@ -78,10 +78,10 @@ export const EN: SiteCopy = {
     cards: [
       {
         title: "Craft first, tech second",
-        body: "Understand the problem in context first. Not every problem needs a technology solution.",
+        body: "We study the problem in its own context before anything else. Not every problem needs technology.",
       },
       {
-        title: "Strengthen, not replace",
+        title: "Strengthen your team, don't replace it",
         body: "The right technology multiplies what your team can already do, without creating a new dependency.",
       },
     ],
@@ -91,7 +91,7 @@ export const EN: SiteCopy = {
     title: "Two services, one way of working",
     lede: "Both are built specifically for you, and both are entirely yours.",
     cta: "Start here",
-    detailsLabel: "Details & investment model",
+    detailsLabel: "Details & pricing model",
     audienceLabel: "Best for",
     tracks: [
       {
@@ -99,7 +99,7 @@ export const EN: SiteCopy = {
         title: "Business Operational",
         subtitle: "Point of sale, finance, and stock. Runs on your own devices.",
         tone: "night",
-        audience: ["Small business", "Cafés", "Retail", "Cashiers", "Warehouses"],
+        audience: ["Small businesses", "Cafés", "Retail stores", "Checkout counters", "Warehouses"],
         stats: [
           { value: "45%*", label: "more efficient transactions & reports" },
           { value: "10-18×", label: "faster reconciliation" },
@@ -107,10 +107,10 @@ export const EN: SiteCopy = {
         ],
         details: [
           "One-time development cost, no monthly subscription",
-          "Data 100% under the physical control of your premises",
-          "Runs on your devices, with no reliance on outside services",
-          "Can be monitored remotely whenever needed",
-          "Upgrades & feature iterations as your needs change",
+          "Your data stays 100% on your premises",
+          "Runs on your own devices, without depending on outside services",
+          "Remote monitoring whenever you need it",
+          "Upgrades and new features as your needs change",
         ],
       },
       {
@@ -118,17 +118,17 @@ export const EN: SiteCopy = {
         title: "Community & Branding",
         subtitle: "A website + CMS you edit yourself, no developer needed.",
         tone: "forest",
-        audience: ["Company profile", "Portfolio", "Community", "Branding"],
+        audience: ["Company profiles", "Portfolios", "Communities", "Branding"],
         stats: [
           { value: "~100", label: "Google speed score" },
           { value: "Global", label: "fast from any city" },
           { value: "Self-CMS", label: "no developer queue" },
         ],
         details: [
-          "One-time development cost, no binding subscription",
+          "One-time development cost, no lock-in subscription",
           "No upfront hosting cost at typical scale",
           "Upgrade on your own as you grow",
-          "Every form a visitor fills in is recorded automatically",
+          "Every form a visitor submits is saved automatically",
           "Update content without a developer",
         ],
       },
@@ -136,7 +136,7 @@ export const EN: SiteCopy = {
   },
 
   proof: {
-    title: "Real results from systems in use",
+    title: "Results from systems already in use",
     lede: "Every one of these is a running system, not a projection.",
     trackLabel: { kitchen: "Kitchen", storefront: "Storefront" },
     storyLabel: "Before & after",
@@ -165,7 +165,7 @@ export const EN: SiteCopy = {
         result: "faster reconciliation",
         meta: "Monitoring platform · Jakarta",
         story:
-          "Before: WhatsApp & Google Sheets, with discrepancies found only at month-end. Now 90 days of data are analysed in < 60 seconds.",
+          "Before: WhatsApp & Google Sheets, with discrepancies found only at month-end. Now 90 days of data can be analysed in under 60 seconds.",
       },
       {
         name: "Sadewa (Sayap Dewantara)",
@@ -174,7 +174,7 @@ export const EN: SiteCopy = {
         meta: "Foundation website",
         url: "sadewaind.org",
         story:
-          "Before: a static Wix site, and 15 years of programme history with no public record. Now anyone can read it, with no platform rental fee.",
+          "Before: a static Wix site, and 15 years of programme history with no public record. Now that history is public, with no platform rental fee.",
       },
       {
         name: "LAKSA Bogor",
@@ -201,11 +201,11 @@ export const EN: SiteCopy = {
     title: "More than a transaction",
     quote: "The success of your system is my best portfolio.",
     items: ["Meaningful networks", "Continuous learning", "Real social impact"],
-    note: "All three sit on top of a transparent development fee, never in place of it.",
+    note: "All three come on top of a transparent development fee, never in place of it.",
   },
 
   process: {
-    title: "From problem to running product",
+    title: "From problem to working product",
     steps: [
       { title: "Discovery", body: "Find the root cause, not the symptom." },
       {
@@ -218,11 +218,11 @@ export const EN: SiteCopy = {
       },
       {
         title: "Deployment & handover",
-        body: "Installed, documented, team trained.",
+        body: "Installed, documented, and your team trained.",
       },
       {
         title: "Post-delivery support",
-        body: "A bug guarantee and a path for the next iteration.",
+        body: "A bug-fix warranty and a path to the next iteration.",
       },
     ],
   },
@@ -232,23 +232,23 @@ export const EN: SiteCopy = {
     location: "Bogor, West Java",
     body: "Before we were a studio, we sat with business owners, teachers, and community organisers whose systems were still notebooks and WhatsApp groups.",
     measure:
-      "Our measure: still in use three months later, with nobody holding their hand.",
+      "Our measure of success: still in use three months later, without anyone holding their hand.",
     facts: [
       { value: "Rp 200M", label: "in grants disbursed to 70 entrepreneurs" },
       { value: "6,117", label: "system users across 15+ schools" },
       { value: "Rp 11.8M", label: "raised in a one-month campaign" },
-      { value: "290k+", label: "audience reached by two campaign collaborations" },
+      { value: "290k+", label: "people reached through two campaign collaborations" },
       { value: "20+ sessions", label: "of testing with real users" },
     ],
   },
 
   contact: {
     title: "Let's design the solution together",
-    lede: "The first session is free and commits you to nothing. Fill in the form and our team will reach out.",
+    lede: "The first session is free, with no commitment. Fill in the form and our team will get in touch.",
   },
 
   footer: {
-    tagline: "Empowering people, impact first.",
+    tagline: "Strengthening people, putting impact first.",
     otherLang: "Versi Indonesia",
     backoffice: "Team login",
   },
@@ -261,7 +261,7 @@ export const EN: SiteCopy = {
         placeholder: "+62 812xxxxxxxx",
       },
       business: {
-        label: "Field or type of business",
+        label: "Type of business",
         placeholder: "Café with 2 branches, hardware store, foundation…",
       },
       interest: {
@@ -271,21 +271,21 @@ export const EN: SiteCopy = {
     },
     optional: "(optional)",
     honeypot: "Leave this empty",
-    submit: "Send & wait for our call",
+    submit: "Send & we'll get in touch",
     pending: "Sending…",
     successTitle: "Sent. Thank you!",
     successBody:
-      "Our team will reach you on that number within 1×24 working hours. No need to prepare anything.",
-    reset: "Fill in again",
+      "Our team will contact you on that number within one working day. You don't need to prepare anything.",
+    reset: "Fill in the form again",
     fallback: "Prefer to talk directly?",
     fallbackLink: "Message us on LinkedIn",
     errors: {
-      empty: "Phone number and business field are still required.",
+      empty: "Please fill in your phone number and type of business.",
       phone: "That number looks incomplete. Please check it again.",
-      business: "Tell us a little more clearly what field your business is in.",
+      business: "Please describe your type of business in a little more detail.",
       interest: "Tell us a little more, or leave it empty.",
       failed:
-        "Sorry, sending failed. Please try once more, or message us on LinkedIn.",
+        "Sorry, that didn't go through. Please try again, or message us on LinkedIn.",
     },
   },
 };
