@@ -101,6 +101,20 @@ seksi (`#filosofi`, `#layanan`, …) sengaja tetap berbahasa Indonesia di
 kedua versi. Bagian PRD mana pun yang mengutip teks halaman publik
 sekarang bicara soal versi Indonesianya saja.
 
+**Situs publik punya halaman Tim di `/tim` dan `/en/tim`** (21 Oktober
+2026). Slug Inggrisnya sengaja tetap `tim`, sama seperti jangkar seksi:
+alamat tiap halaman per bahasa ada di `PATHS` (`copy.ts`), dan pengalih
+bahasa, tautan nav, serta `alternates` metadata membacanya dari sana.
+Nav dan footer menerima `page`; dari halaman selain beranda, tautan
+seksi jadi `/#layanan` atau `/en#layanan`. Anggota tim (nama, LinkedIn,
+foto) di `TEAM` (`content.ts`), perannya di `team.roles` kedua berkas
+copy, dikunci id anggota. Fotonya potret setengah badan berlatar
+dihapus di `public/brand/team/`, dibingkai seragam. Acuan tampilannya
+varian B "potret besar" di canvas Artifact Design yang sama dengan
+homepage (artboard `TimB.dc.html`); ubah di canvas dulu sebelum di
+`src/components/marketing/team.tsx`. Liza (General Affairs & Finance)
+belum dipajang.
+
 **Wajib setiap selesai perubahan/pengembangan: perbarui juga
 `docs/CV - Decaf Internal System.md`.** Itu rangkuman proyek untuk CV &
 portofolio (spec, arsitektur, keamanan, DevOps, tantangan, output, dampak,

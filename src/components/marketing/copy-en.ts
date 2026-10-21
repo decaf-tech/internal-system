@@ -36,8 +36,10 @@ export const EN: SiteCopy = {
     ],
     sections: "Page sections",
     home: "Decaf Tech, back to top",
+    homePage: "Decaf Tech, home",
     language: "Choose language",
     cta: "Free session",
+    team: "Team",
   },
 
   mascots: {
@@ -245,6 +247,23 @@ export const EN: SiteCopy = {
   contact: {
     title: "Let's design the solution together",
     lede: "The first session is free, with no commitment. Fill in the form and our team will get in touch.",
+  },
+
+  team: {
+    meta: {
+      title: "Team | Decaf Tech",
+      description:
+        "Meet the people behind Decaf Tech, a custom systems studio from Bogor.",
+    },
+    title: { before: "The Decaf ", accent: "team" },
+    listLabel: "Team members",
+    roles: {
+      abi: "Founder · Product & Tech",
+      fauzan: "Co-Founder · Operational & Sales",
+    },
+    photo: "Photo of",
+    linkHint: "LinkedIn profile, opens in a new tab",
+    closing: { title: "Talk to us directly" },
   },
 
   footer: {

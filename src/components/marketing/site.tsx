@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { AnalyticsBeacon } from "./analytics-beacon";
-import { COPY, HOME, LANGS, type Lang } from "./copy";
+import { COPY, LANGS, PATHS, type Lang, type Page } from "./copy";
 import { nunito } from "./fonts";
 import { RevealOnScroll } from "./reveal-on-scroll";
 import {
@@ -38,9 +38,7 @@ import { SiteFooter } from "./shell";
  */
 export function MarketingSite({ lang }: { lang: Lang }) {
   return (
-    <div lang={lang} className={`site contents ${nunito.variable}`}>
-      <RevealOnScroll />
-      <AnalyticsBeacon lang={lang} />
+    <SiteRoot lang={lang}>
       <Hero lang={lang} />
       <main className="flex-1 bg-cream">
         <Philosophy lang={lang} />
@@ -52,6 +50,26 @@ export function MarketingSite({ lang }: { lang: Lang }) {
         <Contact lang={lang} />
       </main>
       <SiteFooter lang={lang} />
+    </SiteRoot>
+  );
+}
+
+/**
+ * Pembungkus bersama setiap halaman publik (beranda dan `/tim`): atribut
+ * `lang`, huruf Nunito, kelas `.site`, efek gulir, dan beacon analitik.
+ */
+export function SiteRoot({
+  lang,
+  children,
+}: {
+  lang: Lang;
+  children: React.ReactNode;
+}) {
+  return (
+    <div lang={lang} className={`site contents ${nunito.variable}`}>
+      <RevealOnScroll />
+      <AnalyticsBeacon lang={lang} />
+      {children}
     </div>
   );
 }
@@ -63,19 +81,21 @@ export function MarketingSite({ lang }: { lang: Lang }) {
  * `/en` adalah halaman yang sama dalam dua bahasa — tanpa itu keduanya
  * bisa dinilai sebagai konten duplikat, dan yang muncul di hasil
  * pencarian belum tentu versi yang dipahami si pencari. `x-default`
- * menunjuk ke versi Indonesia: itu bahasa bawaan situs ini.
+ * menunjuk ke versi Indonesia: itu bahasa bawaan situs ini. Halaman tim
+ * (`/tim` ↔ `/en/tim`) dipasangkan dengan cara yang sama.
  */
-export function marketingMetadata(lang: Lang): Metadata {
-  const copy = COPY[lang];
+export function marketingMetadata(lang: Lang, page: Page = "home"): Metadata {
+  const meta = page === "team" ? COPY[lang].team.meta : COPY[lang].meta;
+  const paths = PATHS[page];
 
   return {
-    title: copy.meta.title,
-    description: copy.meta.description,
+    title: meta.title,
+    description: meta.description,
     alternates: {
-      canonical: HOME[lang],
+      canonical: paths[lang],
       languages: {
-        ...Object.fromEntries(LANGS.map((code) => [code, HOME[code]])),
-        "x-default": HOME.id,
+        ...Object.fromEntries(LANGS.map((code) => [code, paths[code]])),
+        "x-default": paths.id,
       },
     },
   };

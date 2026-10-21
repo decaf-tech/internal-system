@@ -37,8 +37,10 @@ export const ID: SiteCopy = {
     ],
     sections: "Bagian halaman",
     home: "Decaf Tech, ke atas halaman",
+    homePage: "Decaf Tech, ke beranda",
     language: "Pilih bahasa",
     cta: "Sesi gratis",
+    team: "Tim",
   },
 
   mascots: {
@@ -258,6 +260,23 @@ export const ID: SiteCopy = {
   contact: {
     title: "Mari rancang solusinya bersama",
     lede: "Sesi pertama gratis dan tidak mengikat. Isi formnya, tim kami yang menghubungi Anda.",
+  },
+
+  team: {
+    meta: {
+      title: "Tim | Decaf Tech",
+      description:
+        "Kenali orang-orang di balik Decaf Tech, studio sistem custom dari Bogor.",
+    },
+    title: { before: "Tim ", accent: "Decaf" },
+    listLabel: "Anggota tim",
+    roles: {
+      abi: "Founder · Product & Tech",
+      fauzan: "Co-Founder · Operational & Sales",
+    },
+    photo: "Foto",
+    linkHint: "Profil LinkedIn, buka di tab baru",
+    closing: { title: "Ngobrol langsung dengan kami" },
   },
 
   footer: {

@@ -1,3 +1,4 @@
+import type { TeamMemberId } from "./content";
 import { EN } from "./copy-en";
 import { ID } from "./copy-id";
 
@@ -30,6 +31,19 @@ export const DEFAULT_LANG: Lang = "id";
 
 /** Alamat beranda tiap bahasa — dipakai pengalih bahasa di bilah nav. */
 export const HOME: Record<Lang, string> = { id: "/", en: "/en" };
+
+/**
+ * Halaman situs publik dan alamatnya per bahasa. Versi Inggris selalu
+ * alamat Indonesia yang diawali `/en`, dan slug-nya sengaja tetap
+ * berbahasa Indonesia (`/en/tim`, bukan `/en/team`), sama seperti jangkar
+ * seksi: pengalih bahasa cukup menukar awalan, tanpa peta slug.
+ */
+export type Page = "home" | "team";
+
+export const PATHS: Record<Page, Record<Lang, string>> = {
+  home: HOME,
+  team: { id: "/tim", en: "/en/tim" },
+};
 
 /** Label dua huruf di pengalih bahasa. */
 export const LANG_LABEL: Record<Lang, string> = { id: "ID", en: "EN" };
@@ -85,9 +99,13 @@ export type SiteCopy = {
     sections: string;
     /** `aria-label` logo yang menuju ke atas halaman. */
     home: string;
+    /** `aria-label` logo yang sama dari halaman selain beranda. */
+    homePage: string;
     /** `aria-label` pengalih bahasa. */
     language: string;
     cta: string;
+    /** Tautan ke halaman tim, di nav dan footer. */
+    team: string;
   };
 
   /**
@@ -169,6 +187,24 @@ export type SiteCopy = {
   contact: {
     title: string;
     lede: string;
+  };
+
+  /**
+   * Halaman `/tim`. Sengaja hemat kata: judul, nama, peran, satu ajakan.
+   * Nama orang dan fotonya tidak berubah menurut bahasa, jadi tinggal di
+   * `TEAM` (content.ts); di sini cuma perannya, dikunci id anggota.
+   */
+  team: {
+    meta: { title: string; description: string };
+    title: { before: string; accent: string };
+    /** `aria-label` kisi anggota. */
+    listLabel: string;
+    roles: Record<TeamMemberId, string>;
+    /** Awalan alt text foto: "Foto Abi" / "Photo of Abi". */
+    photo: string;
+    /** Ekor `aria-label` kartu, yang seluruhnya tautan ke LinkedIn. */
+    linkHint: string;
+    closing: { title: string };
   };
 
   footer: {

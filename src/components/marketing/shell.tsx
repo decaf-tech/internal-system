@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { LogoLockupInverse } from "@/components/brand";
 import { CONTACT } from "./content";
-import { COPY, HOME, LANG_LABEL, LANG_NAME, LANGS, type Lang } from "./copy";
+import {
+  COPY,
+  HOME,
+  LANG_LABEL,
+  LANG_NAME,
+  LANGS,
+  PATHS,
+  type Lang,
+  type Page,
+} from "./copy";
 
 /**
  * Potongan yang dipakai berulang di seluruh halaman publik: pembungkus
@@ -32,8 +41,9 @@ export function Container({
 /**
  * Pengalih bahasa: dua tautan, bukan tombol.
  *
- * Tiap bahasa punya rutenya sendiri (`/` dan `/en`), jadi berpindah
- * bahasa cuma soal berpindah halaman: tidak ada state, tidak ada cookie.
+ * Tiap bahasa punya rutenya sendiri (`/` dan `/en`, `/tim` dan
+ * `/en/tim`), jadi berpindah bahasa cuma soal berpindah ke halaman yang
+ * sama di bahasa lain: tidak ada state, tidak ada cookie.
  * Bahasa yang aktif tetap dirender sebagai tautan supaya lebarnya tidak
  * berubah saat berpindah; ia cuma ditandai `aria-current` dan diberi
  * latar penuh.
@@ -43,7 +53,7 @@ export function Container({
  * (`@view-transition { navigation: auto }`) cuma menyala untuk navigasi
  * lintas-dokumen sungguhan.
  */
-function LanguageSwitch({ lang }: { lang: Lang }) {
+function LanguageSwitch({ lang, page }: { lang: Lang; page: Page }) {
   return (
     <div
       role="group"
@@ -55,7 +65,7 @@ function LanguageSwitch({ lang }: { lang: Lang }) {
         return (
           <a
             key={code}
-            href={HOME[code]}
+            href={PATHS[page][code]}
             hrefLang={code}
             lang={code}
             title={LANG_NAME[code]}
@@ -78,15 +88,22 @@ function LanguageSwitch({ lang }: { lang: Lang }) {
  * Bilah nav di atas hero, ikut menggulir bersama halaman. Tautan seksinya
  * disembunyikan di bawah 760px: di lebar ponsel jalan masuknya memang
  * menggulir, dan pengalih bahasa serta ajakan utamanya tetap terlihat.
+ * Halaman tim tetap terjangkau di ponsel lewat footer.
+ *
+ * Di beranda, tautan seksi dan ajakannya jangkar biasa (`#layanan`).
+ * Dari halaman lain, jangkar yang sama diawali alamat beranda bahasanya
+ * (`/#layanan`, `/en#layanan`), supaya kembali ke seksi yang benar.
  */
-export function SiteNav({ lang }: { lang: Lang }) {
+export function SiteNav({ lang, page = "home" }: { lang: Lang; page?: Page }) {
   const copy = COPY[lang].nav;
+  const onHome = page === "home";
+  const base = onHome ? "" : HOME[lang];
 
   return (
     <Container className="flex flex-wrap items-center gap-5 py-[18px]">
       <a
-        href="#top"
-        aria-label={copy.home}
+        href={onHome ? "#top" : HOME[lang]}
+        aria-label={onHome ? copy.home : copy.homePage}
         className="flex min-h-11 items-center"
       >
         <LogoLockupInverse className="h-9" />
@@ -98,17 +115,28 @@ export function SiteNav({ lang }: { lang: Lang }) {
         {copy.links.map((link) => (
           <a
             key={link.href}
-            href={link.href}
+            href={base + link.href}
             className="p-3 text-ink-inverse no-underline hover:text-accent-bright"
           >
             {link.label}
           </a>
         ))}
+        <a
+          href={PATHS.team[lang]}
+          aria-current={page === "team" ? "page" : undefined}
+          className={`p-3 no-underline ${
+            page === "team"
+              ? "text-accent-bright underline decoration-2 underline-offset-8"
+              : "text-ink-inverse hover:text-accent-bright"
+          }`}
+        >
+          {copy.team}
+        </a>
       </nav>
       <div className="ml-auto flex items-center gap-3">
-        <LanguageSwitch lang={lang} />
+        <LanguageSwitch lang={lang} page={page} />
         <a
-          href="#kontak"
+          href={`${base}#kontak`}
           data-track="discovery_cta"
           className="site-btn min-h-[46px] px-[18px] py-[11px] text-[15px]"
         >
@@ -123,7 +151,13 @@ export function SiteNav({ lang }: { lang: Lang }) {
  * Footer. Kontak yang dipajang cuma LinkedIn: setiap ajakan di halaman ini
  * menuju form sesi discovery atau LinkedIn, tidak ada jalur ketiga.
  */
-export function SiteFooter({ lang }: { lang: Lang }) {
+export function SiteFooter({
+  lang,
+  page = "home",
+}: {
+  lang: Lang;
+  page?: Page;
+}) {
   const copy = COPY[lang].footer;
   const other = LANGS.find((code) => code !== lang) ?? "id";
 
@@ -150,7 +184,16 @@ export function SiteFooter({ lang }: { lang: Lang }) {
         <ul className="grid min-w-0 flex-[0_1_180px] gap-0.5 text-[15px]">
           <li>
             <a
-              href={HOME[other]}
+              href={PATHS.team[lang]}
+              aria-current={page === "team" ? "page" : undefined}
+              className="inline-block py-2.5 text-ink-inverse hover:text-accent-bright"
+            >
+              {COPY[lang].nav.team}
+            </a>
+          </li>
+          <li>
+            <a
+              href={PATHS[page][other]}
               hrefLang={other}
               lang={other}
               className="inline-block py-2.5 text-ink-inverse hover:text-accent-bright"
