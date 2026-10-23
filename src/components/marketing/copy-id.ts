@@ -197,6 +197,15 @@ export const ID: SiteCopy = {
         story:
           "Dulu WordPress lama tanpa jalur bahasa Inggris. Kini situsnya punya self-CMS: staf non-teknis menyusun halaman sendiri dari 24 blok siap pakai lewat dasbor berbahasa Indonesia, tanpa menulis satu baris kode. Dokumentasi kegiatan dipindah utuh.",
       },
+      {
+        name: "Waca Bajo",
+        track: "storefront",
+        result: "Situs dua bahasa dengan survei warga di dalamnya",
+        meta: "Gerakan literasi · Labuan Bajo, NTT",
+        url: "wacabajo.org",
+        story:
+          "Dulu gerakan ini hanya punya Instagram, dan surveinya direncanakan lewat Google Form. Kini ada situs dua bahasa, survei need assessment yang diisi langsung di situs, dan backoffice untuk tim membaca hasilnya. Tanpa pelacak pihak ketiga dan tanpa banner cookie.",
+      },
     ],
   },
 

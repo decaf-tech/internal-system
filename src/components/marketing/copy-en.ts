@@ -196,6 +196,15 @@ export const EN: SiteCopy = {
         story:
           "Before: an ageing WordPress site with no English path. Now the site has a self-CMS: non-technical staff build pages themselves from 24 ready-made blocks in an Indonesian-language dashboard, without writing a line of code. The activity archive moved over intact.",
       },
+      {
+        name: "Waca Bajo",
+        track: "storefront",
+        result: "A bilingual site with a resident survey built in",
+        meta: "Literacy movement · Labuan Bajo, NTT",
+        url: "wacabajo.org",
+        story:
+          "Before: the movement only had Instagram, and its survey was planned as a Google Form. Now there is a bilingual site, a needs-assessment survey filled in right on the site, and a back office where the team reads the results. No third-party trackers and no cookie banner.",
+      },
     ],
   },
 

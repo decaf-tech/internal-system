@@ -385,20 +385,19 @@ export function Proof({ lang }: { lang: Lang }) {
                 <h3 className="text-[18px]">{item.name}</h3>
                 <p className="mt-0.5 text-[14px] text-ink-muted">
                   {item.meta}
-                  {item.url && (
-                    <>
-                      {" · "}
-                      <a
-                        href={`https://${item.url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.url}
-                      </a>
-                    </>
-                  )}
                 </p>
               </div>
+              {item.url && (
+                <a
+                  href={`https://${item.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center gap-2 self-start rounded-full bg-accent-soft px-4 text-[16px] font-extrabold text-accent-hover no-underline transition-colors duration-150 hover:bg-accent hover:text-white"
+                >
+                  {item.url}
+                  <span aria-hidden>↗</span>
+                </a>
+              )}
               <details className="site-more mt-auto border-t border-cream-line">
                 <summary>
                   {proof.storyLabel}
