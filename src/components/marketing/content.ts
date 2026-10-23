@@ -1,6 +1,7 @@
 import type { StaticImageData } from "next/image";
 import abiPhoto from "../../../public/brand/team/abi.webp";
 import fauzanPhoto from "../../../public/brand/team/fauzan.webp";
+import lizaPhoto from "../../../public/brand/team/liza.webp";
 
 /**
  * Data situs publik yang TIDAK berubah mengikuti bahasa: alamat kontak
@@ -45,6 +46,12 @@ export const TEAM = [
     name: "Fauzan",
     linkedinUrl: "https://www.linkedin.com/in/fauzan-kamil-03b95b267",
     photo: fauzanPhoto,
+  },
+  {
+    id: "liza",
+    name: "Liza",
+    linkedinUrl: "https://www.linkedin.com/in/sitinurhalizah02",
+    photo: lizaPhoto,
   },
 ] as const satisfies readonly TeamMember[];
 

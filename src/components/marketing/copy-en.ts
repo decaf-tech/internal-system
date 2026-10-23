@@ -259,7 +259,8 @@ export const EN: SiteCopy = {
     listLabel: "Team members",
     roles: {
       abi: "Founder · Product & Tech",
-      fauzan: "Co-Founder · Operational & Sales",
+      fauzan: "Co-Founder · Ops & Sales",
+      liza: "General Affairs & Finance",
     },
     photo: "Photo of",
     linkHint: "LinkedIn profile, opens in a new tab",

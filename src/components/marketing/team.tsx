@@ -58,7 +58,7 @@ export function TeamPage({ lang }: { lang: Lang }) {
                       <Image
                         src={member.photo}
                         alt={`${team.photo} ${member.name}`}
-                        sizes="(min-width: 1280px) 590px, (min-width: 660px) 50vw, 100vw"
+                        sizes="(min-width: 1280px) 390px, (min-width: 960px) 33vw, (min-width: 660px) 50vw, 100vw"
                         className="team-photo absolute top-[11%] left-0 block h-auto w-full"
                       />
                       <div className="absolute inset-x-4 bottom-4 flex items-center gap-3.5 rounded-[18px] bg-cream-surface py-4 pr-4 pl-[22px]">

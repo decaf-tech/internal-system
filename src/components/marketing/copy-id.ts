@@ -272,7 +272,8 @@ export const ID: SiteCopy = {
     listLabel: "Anggota tim",
     roles: {
       abi: "Founder · Product & Tech",
-      fauzan: "Co-Founder · Operational & Sales",
+      fauzan: "Co-Founder · Ops & Sales",
+      liza: "General Affairs & Finance",
     },
     photo: "Foto",
     linkHint: "Profil LinkedIn, buka di tab baru",
